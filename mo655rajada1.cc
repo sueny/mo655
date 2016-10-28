@@ -30,7 +30,7 @@
 //                          |
 //                 Rank 0   |   Rank 1
 // -------------------------|----------------------------
-//   Wifi 10.1.3.0
+//   Wifi 10.1.2.0
 //                 AP
 //  *    *    *    *
 //  |    |    |    |    10.1.1.0
@@ -48,7 +48,8 @@ main (int argc, char *argv[])
 {
   bool verbose = true;
   uint32_t nServer = 0;
-  uint32_t nWifi = 3;
+  uint32_t nWifi = 5;
+  float tempoExecucao = 10.0;
   bool tracing = false;
 
   CommandLine cmd;
@@ -58,6 +59,8 @@ main (int argc, char *argv[])
   cmd.AddValue ("tracing", "Enable pcap tracing", tracing);
 
   cmd.Parse (argc,argv);
+
+  Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1440));
 
   // Check for valid number of csma or wifi nodes
   // 250 should be enough, otherwise IP addresses 
@@ -70,7 +73,7 @@ main (int argc, char *argv[])
 
   if (verbose)
     {
-      LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
+      LogComponentEnable ("OnOffApplication", LOG_LEVEL_INFO);
       LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
     }
 
@@ -126,12 +129,10 @@ main (int argc, char *argv[])
                                  "GridWidth", UintegerValue (3),
                                  "LayoutType", StringValue ("RowFirst"));
 
-  mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
-                             "Bounds", RectangleValue (Rectangle (-50, 50, -50, 50))
-                              );
-  mobility.Install (wifiStaNodes);
 
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+  mobility.Install (wifiStaNodes);
+
   mobility.Install (wifiApNode);
 
   InternetStackHelper stack;
@@ -145,29 +146,45 @@ main (int argc, char *argv[])
   Ipv4InterfaceContainer p2pInterfaces;
   p2pInterfaces = address.Assign (p2pDevices);
 
-  address.SetBase ("10.1.3.0", "255.255.255.0");
+  address.SetBase ("10.1.2.0", "255.255.255.0");
   address.Assign (staDevices);
   address.Assign (apDevices);
 
-  PacketSinkHelper  echoServer ("ns3::UdpSocketFactory", InetSocketAddress (p2pInterfaces.GetAddress (1), 9));
-
-  ApplicationContainer serverApps = echoServer.Install (serverNode.Get (0));
-  serverApps.Start (Seconds (1.0));
-  serverApps.Stop (Seconds (10.0));
-
   
+
+  /*
   UdpEchoClientHelper echoClient (p2pInterfaces.GetAddress (1), 9);
   echoClient.SetAttribute ("MaxPackets", UintegerValue (5));
   echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-  echoClient.SetAttribute ("PacketSize", UintegerValue (440));
+  echoClient.SetAttribute ("PacketSize", UintegerValue (440));*/
 
+
+  OnOffHelper onOffHelper ("ns3::TcpSocketFactory", p2pInterfaces.GetAddress (1));
+    onOffHelper.SetAttribute ("OnTime", StringValue
+("ns3::NormalRandomVariable[Mean=2.|Variance=2.|Bound=10.]"));
+    onOffHelper.SetAttribute ("OffTime", StringValue
+("ns3::NormalRandomVariable[Mean=2.|Variance=1.|Bound=10.]"));
+    onOffHelper.SetAttribute ("DataRate",StringValue ("1Mbps"));
+    onOffHelper.SetAttribute ("PacketSize", UintegerValue (1426));
+
+  
+  ApplicationContainer serverApps;
   ApplicationContainer clientApps;
+
   for (uint32_t i = 0; i < nWifi; i++) {
-    clientApps.Add(echoClient.Install (wifiStaNodes.Get (i)));
+    AddressValue sinkAddress (InetSocketAddress (p2pInterfaces.GetAddress (1), 9+i));
+    PacketSinkHelper  echoServer ("ns3::TcpSocketFactory", InetSocketAddress (p2pInterfaces.GetAddress (1), 9+i));
+    serverApps.Add(echoServer.Install (serverNode.Get (0)));
+    
+    onOffHelper.SetAttribute("Remote", sinkAddress);
+    clientApps.Add(onOffHelper.Install (wifiStaNodes.Get (i)));
   }
+
   clientApps.Start (Seconds (2.0));
   clientApps.Stop (Seconds (10.0));
 
+  serverApps.Start (Seconds (1.0));
+  serverApps.Stop (Seconds (10.0));
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
@@ -175,18 +192,19 @@ main (int argc, char *argv[])
   FlowMonitorHelper flowHelper;
   flowMonitor = flowHelper.InstallAll();
 
-  Simulator::Stop (Seconds (10.0));
+  Simulator::Stop (Seconds (tempoExecucao));
 
-  flowMonitor->SerializeToXmlFile("aaaaaaaaaaaaaaaa.xml", true, true);
-
-  if (tracing == true)
-    {
-      pointToPoint.EnablePcapAll ("third");
-      phy.EnablePcap ("third", apDevices.Get (0));
+ // if (tracing == true)
+   // {
+      pointToPoint.EnableAsciiAll ("third");
+      phy.EnableAscii ("third", apDevices.Get (0));
      // csma.EnablePcap ("third", csmaDevices.Get (0), true);
-    }
+    //}
 
   Simulator::Run ();
+
+  flowMonitor->SerializeToXmlFile("mo655rajada1.xml", true, true);
+
   Simulator::Destroy ();
   return 0;
 }

@@ -30,7 +30,7 @@
 //                          |
 //                 Rank 0   |   Rank 1
 // -------------------------|----------------------------
-//   Wifi 10.1.3.0
+//   Wifi 10.1.2.0
 //                 AP
 //  *    *    *    *
 //  |    |    |    |    10.1.1.0
@@ -48,7 +48,8 @@ main (int argc, char *argv[])
 {
   bool verbose = true;
   uint32_t nServer = 0;
-  uint32_t nWifi = 3;
+  uint32_t nWifi = 5;
+  float tempoExecucao = 10.0;
   bool tracing = false;
 
   CommandLine cmd;
@@ -126,12 +127,8 @@ main (int argc, char *argv[])
                                  "GridWidth", UintegerValue (3),
                                  "LayoutType", StringValue ("RowFirst"));
 
-  mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
-                             "Bounds", RectangleValue (Rectangle (-50, 50, -50, 50))
-                              );
-  mobility.Install (wifiStaNodes);
-
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+  mobility.Install (wifiStaNodes);
   mobility.Install (wifiApNode);
 
   InternetStackHelper stack;
@@ -145,7 +142,7 @@ main (int argc, char *argv[])
   Ipv4InterfaceContainer p2pInterfaces;
   p2pInterfaces = address.Assign (p2pDevices);
 
-  address.SetBase ("10.1.3.0", "255.255.255.0");
+  address.SetBase ("10.1.2.0", "255.255.255.0");
   address.Assign (staDevices);
   address.Assign (apDevices);
 
@@ -157,9 +154,9 @@ main (int argc, char *argv[])
 
   
   UdpEchoClientHelper echoClient (p2pInterfaces.GetAddress (1), 9);
-  echoClient.SetAttribute ("MaxPackets", UintegerValue (5));
-  echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-  echoClient.SetAttribute ("PacketSize", UintegerValue (440));
+  echoClient.SetAttribute ("MaxPackets", UintegerValue (10000));
+  echoClient.SetAttribute ("Interval", TimeValue (Seconds (0.0036)));
+  echoClient.SetAttribute ("PacketSize", UintegerValue (450));
 
   ApplicationContainer clientApps;
   for (uint32_t i = 0; i < nWifi; i++) {
@@ -175,9 +172,7 @@ main (int argc, char *argv[])
   FlowMonitorHelper flowHelper;
   flowMonitor = flowHelper.InstallAll();
 
-  Simulator::Stop (Seconds (10.0));
-
-  flowMonitor->SerializeToXmlFile("aaaaaaaaaaaaaaaa.xml", true, true);
+  Simulator::Stop (Seconds (tempoExecucao));
 
   if (tracing == true)
     {
@@ -187,6 +182,9 @@ main (int argc, char *argv[])
     }
 
   Simulator::Run ();
+
+  flowMonitor->SerializeToXmlFile("mo655cbr1.xml", true, true);
+
   Simulator::Destroy ();
   return 0;
 }
