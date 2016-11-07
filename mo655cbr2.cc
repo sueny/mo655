@@ -60,8 +60,6 @@ main (int argc, char *argv[])
 
 	cmd.Parse (argc,argv);
 
-	Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1440));
-
 	// Check for valid number of csma or wifi nodes
 	// 250 should be enough, otherwise IP addresses
 	// soon become an issue
@@ -73,7 +71,7 @@ main (int argc, char *argv[])
 
 	if (verbose)
 	{
-		LogComponentEnable ("OnOffApplication", LOG_LEVEL_INFO);
+		LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
 		LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
 	}
 
@@ -129,10 +127,12 @@ main (int argc, char *argv[])
 			"GridWidth", UintegerValue (3),
 			"LayoutType", StringValue ("RowFirst"));
 
-
-	mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+	mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
+			"Bounds", RectangleValue (Rectangle (-50, 50, -50, 50))
+	);
 	mobility.Install (wifiStaNodes);
 
+	mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 	mobility.Install (wifiApNode);
 
 	InternetStackHelper stack;
@@ -150,41 +150,25 @@ main (int argc, char *argv[])
 	address.Assign (staDevices);
 	address.Assign (apDevices);
 
+	PacketSinkHelper  echoServer ("ns3::UdpSocketFactory", InetSocketAddress (p2pInterfaces.GetAddress (1), 9));
+
+	ApplicationContainer serverApps = echoServer.Install (serverNode.Get (0));
+	serverApps.Start (Seconds (1.0));
+	serverApps.Stop (Seconds (10.0));
 
 
-	/*
-  UdpEchoClientHelper echoClient (p2pInterfaces.GetAddress (1), 9);
-  echoClient.SetAttribute ("MaxPackets", UintegerValue (5));
-  echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-  echoClient.SetAttribute ("PacketSize", UintegerValue (440));*/
+	UdpEchoClientHelper echoClient (p2pInterfaces.GetAddress (1), 9);
+	echoClient.SetAttribute ("MaxPackets", UintegerValue (10000));
+	echoClient.SetAttribute ("Interval", TimeValue (Seconds (0.003824)));
+	echoClient.SetAttribute ("PacketSize", UintegerValue (450));
 
-
-	OnOffHelper onOffHelper ("ns3::TcpSocketFactory", p2pInterfaces.GetAddress (1));
-	onOffHelper.SetAttribute ("OnTime", StringValue
-			("ns3::NormalRandomVariable[Mean=2.|Variance=2.|Bound=10.]"));
-	onOffHelper.SetAttribute ("OffTime", StringValue
-			("ns3::NormalRandomVariable[Mean=2.|Variance=1.|Bound=10.]"));
-	onOffHelper.SetAttribute ("DataRate",StringValue ("1Mbps"));
-	onOffHelper.SetAttribute ("PacketSize", UintegerValue (1426));
-
-
-	ApplicationContainer serverApps;
 	ApplicationContainer clientApps;
-
 	for (uint32_t i = 0; i < nWifi; i++) {
-		AddressValue sinkAddress (InetSocketAddress (p2pInterfaces.GetAddress (1), 9+i));
-		PacketSinkHelper  echoServer ("ns3::TcpSocketFactory", InetSocketAddress (p2pInterfaces.GetAddress (1), 9+i));
-		serverApps.Add(echoServer.Install (serverNode.Get (0)));
-
-		onOffHelper.SetAttribute("Remote", sinkAddress);
-		clientApps.Add(onOffHelper.Install (wifiStaNodes.Get (i)));
+		clientApps.Add(echoClient.Install (wifiStaNodes.Get (i)));
 	}
-
 	clientApps.Start (Seconds (2.0));
 	clientApps.Stop (Seconds (10.0));
 
-	serverApps.Start (Seconds (1.0));
-	serverApps.Stop (Seconds (10.0));
 
 	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
@@ -194,16 +178,16 @@ main (int argc, char *argv[])
 
 	Simulator::Stop (Seconds (tempoExecucao));
 
-	// if (tracing == true)
-	// {
-	pointToPoint.EnableAsciiAll ("third");
-	phy.EnableAscii ("third", apDevices.Get (0));
-	// csma.EnablePcap ("third", csmaDevices.Get (0), true);
-	//}
+	if (tracing == true)
+	{
+		pointToPoint.EnablePcapAll ("third");
+		phy.EnablePcap ("third", apDevices.Get (0));
+		// csma.EnablePcap ("third", csmaDevices.Get (0), true);
+	}
 
 	Simulator::Run ();
 
-	flowMonitor->SerializeToXmlFile("mo655rajada1.xml", true, true);
+	flowMonitor->SerializeToXmlFile("mo655cbr2.xml", true, true);
 
 	Simulator::Destroy ();
 	return 0;

@@ -129,10 +129,12 @@ main (int argc, char *argv[])
 			"GridWidth", UintegerValue (3),
 			"LayoutType", StringValue ("RowFirst"));
 
-
-	mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+	mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
+			"Bounds", RectangleValue (Rectangle (-50, 50, -50, 50))
+	);
 	mobility.Install (wifiStaNodes);
 
+	mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 	mobility.Install (wifiApNode);
 
 	InternetStackHelper stack;
@@ -203,7 +205,7 @@ main (int argc, char *argv[])
 
 	Simulator::Run ();
 
-	flowMonitor->SerializeToXmlFile("mo655rajada1.xml", true, true);
+	flowMonitor->SerializeToXmlFile("mo655rajada2.xml", true, true);
 
 	Simulator::Destroy ();
 	return 0;
