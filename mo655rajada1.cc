@@ -54,7 +54,7 @@ main (int argc, char *argv[])
 	
 	bool verbose = true;
 	uint32_t nServer = 0;
-	float tempoExecucao = 10.0;
+	float tempoExecucao = 5.0;
 	
 	bool tracing = true;
 
