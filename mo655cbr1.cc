@@ -42,15 +42,13 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("ThirdScriptExample");
+NS_LOG_COMPONENT_DEFINE ("CBRwithoutMobilityProgram");
 
 int 
 main (int argc, char *argv[])
 {
-	uint32_t exec = 1;
 	uint32_t qtddExec = 40/5;
 	uint32_t repeticao = 10;
-
 
 	uint64_t maxPackets = 15690;
 	double timeInterval = 0.3824;
@@ -63,18 +61,18 @@ main (int argc, char *argv[])
 	bool tracing = false;
 
 	CommandLine cmd;
-	cmd.AddValue ("nServer", "Number of \"extra\" CSMA nodes/devices", nServer);
+	cmd.AddValue ("nServer", "Number of server", nServer);
 	cmd.AddValue ("verbose", "Tell echo applications to log if true", verbose);
 	cmd.AddValue ("tracing", "Enable pcap tracing", tracing);
 
 	cmd.Parse (argc,argv);
 
-	for (uint32_t i = exec; i <= qtddExec; i++) {
+	for (uint32_t i = 1; i <= qtddExec; i++) {
 		for (uint32_t k = 1; k <= repeticao; k++) {
 
 			uint32_t nWifi = i* 5;
 			cmd.AddValue ("nWifi", "Number of wifi STA devices", nWifi);
-
+	
 			// Check for valid number of csma or wifi nodes
 			// 250 should be enough, otherwise IP addresses
 			// soon become an issue
