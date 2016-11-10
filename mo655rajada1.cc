@@ -23,7 +23,7 @@
 #include "ns3/csma-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/flow-monitor-module.h"
-#include <sstream>
+//#include <sstream>
 
 // Default Network Topology
 //
@@ -49,28 +49,27 @@ main (int argc, char *argv[])
 {
 	uint32_t qtddExec = 40/5;
 	uint32_t repeticao = 10;
-	
-	uint64_t packetSize = 1426;
-	
+
 	bool verbose = true;
 	uint32_t nServer = 0;
-	float tempoExecucao = 5.0;
-	
-	bool tracing = true;
+	float tempoExecucao = 100.0;
 
-	CommandLine cmd;
-	cmd.AddValue ("nServer", "Number of server", nServer);
-	cmd.AddValue ("verbose", "Tell echo applications to log if true", verbose);
-	cmd.AddValue ("tracing", "Enable pcap tracing", tracing);
+	bool tracing = false;
 
-	cmd.Parse (argc,argv);
-	
+
 	for (uint32_t i = 1; i <= qtddExec; i++) {
 		for (uint32_t k = 1; k <= repeticao; k++) {
-		
+
 			uint32_t nWifi = i* 5;
+
+			CommandLine cmd;
+			cmd.AddValue ("nServer", "Number of server", nServer);
 			cmd.AddValue ("nWifi", "Number of wifi STA devices", nWifi);
-			
+			cmd.AddValue ("verbose", "Tell echo applications to log if true", verbose);
+			cmd.AddValue ("tracing", "Enable pcap tracing", tracing);
+
+			cmd.Parse (argc,argv);
+
 			Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1440));
 
 			// Check for valid number of csma or wifi nodes
@@ -160,15 +159,15 @@ main (int argc, char *argv[])
 			address.SetBase ("10.1.2.0", "255.255.255.0");
 			address.Assign (staDevices);
 			address.Assign (apDevices);
-			
+
 
 			OnOffHelper onOffHelper ("ns3::TcpSocketFactory", p2pInterfaces.GetAddress (1));
 			onOffHelper.SetAttribute ("OnTime", StringValue
-					("ns3::NormalRandomVariable[Mean=2.|Variance=2.|Bound=10.]"));
+					("ns3::NormalRandomVariable[Mean=10.0|Variance=10.0|Bound=1.0]"));
 			onOffHelper.SetAttribute ("OffTime", StringValue
-					("ns3::NormalRandomVariable[Mean=2.|Variance=1.|Bound=10.]"));
+					("ns3::NormalRandomVariable[Mean=1.0|Variance=1.0|Bound=1.0]"));
 			onOffHelper.SetAttribute ("DataRate",StringValue ("1Mbps"));
-			onOffHelper.SetAttribute ("PacketSize", UintegerValue (packetSize));
+			onOffHelper.SetAttribute ("PacketSize", UintegerValue (1426));
 
 
 			ApplicationContainer serverApps;
@@ -197,12 +196,13 @@ main (int argc, char *argv[])
 
 			Simulator::Stop (Seconds (tempoExecucao));
 
+			/*
 			if (tracing == true)
 			{
 				pointToPoint.EnableAsciiAll ("third");
 				phy.EnableAscii ("third", apDevices.Get (0));
 				// csma.EnablePcap ("third", csmaDevices.Get (0), true);
-			}
+			}*/
 
 			Simulator::Run ();
 
@@ -215,6 +215,6 @@ main (int argc, char *argv[])
 			Simulator::Destroy ();
 		}
 	}
-	
+
 	return 0;
 }

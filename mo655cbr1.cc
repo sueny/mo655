@@ -47,16 +47,16 @@ NS_LOG_COMPONENT_DEFINE ("CBRwithoutMobilityProgram");
 int 
 main (int argc, char *argv[])
 {
-	uint32_t qtddExec = 40/5;
-	uint32_t repeticao = 10;
+	uint32_t qtddExec = 5/5;
+	uint32_t repeticao = 2;
 
-	uint64_t maxPackets = 15690;
-	double timeInterval = 0.3824;
+	uint64_t maxPackets = 1000000;
+	double timeInterval = 0.003824;
 	uint64_t packetSize = 450;
 
 	bool verbose = true;
 	uint32_t nServer = 0;
-	float tempoExecucao = 5.0;
+	float tempoExecucao = 1000.0;
 
 	bool tracing = false;
 
