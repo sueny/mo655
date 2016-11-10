@@ -47,20 +47,23 @@ NS_LOG_COMPONENT_DEFINE ("RajadaWithoutMobilityProgram");
 int 
 main (int argc, char *argv[])
 {
-	uint32_t qtddExec = 40/5;
-	uint32_t repeticao = 10;
+	uint32_t qtddExec = 5/5;
+	uint32_t repeticao = 2;
 
 	bool verbose = true;
 	uint32_t nServer = 0;
-	float tempoExecucao = 100.0;
+	float tempoExecucao = 10.0;
 
 	bool tracing = false;
 
 
-	for (uint32_t i = 1; i <= qtddExec; i++) {
+	for (uint32_t z = 1; z <= qtddExec; z++) {
+
+		uint32_t nWifi = z * 5;
+		Time delaySumNodes[nWifi*2];
+
 		for (uint32_t k = 1; k <= repeticao; k++) {
 
-			uint32_t nWifi = i* 5;
 
 			CommandLine cmd;
 			cmd.AddValue ("nServer", "Number of server", nServer);
@@ -163,11 +166,20 @@ main (int argc, char *argv[])
 
 			OnOffHelper onOffHelper ("ns3::TcpSocketFactory", p2pInterfaces.GetAddress (1));
 			onOffHelper.SetAttribute ("OnTime", StringValue
-					("ns3::NormalRandomVariable[Mean=10.0|Variance=10.0|Bound=1.0]"));
+					("ns3::NormalRandomVariable[Mean=5.0|Variance=1.0|Bound=10.0]"));
 			onOffHelper.SetAttribute ("OffTime", StringValue
-					("ns3::NormalRandomVariable[Mean=1.0|Variance=1.0|Bound=1.0]"));
+					("ns3::NormalRandomVariable[Mean=7.0|Variance=1.0|Bound=10.0]"));
 			onOffHelper.SetAttribute ("DataRate",StringValue ("1Mbps"));
 			onOffHelper.SetAttribute ("PacketSize", UintegerValue (1426));
+
+			/*
+			 * client = ns.applications.OnOffHelper("ns3::TcpSocketFactory", csmaInterfaces.GetAddress(nCsma))
+    client.SetAttribute("PacketSize", ns.core.UintegerValue(1440)) # +60 header
+    client.SetAttribute("MaxBytes", ns.core.UintegerValue(0))
+    client.SetAttribute("DataRate", ns3.DataRateValue(ns3.DataRate("1Mbps")))
+    client.SetAttribute("OnTime", ns.core.StringValue("ns3::NormalRandomVariable[Mean=5.|Variance=1.|Bound=10.]"))
+client.SetAttribute("OffTime", ns.core.StringValue("ns3::NormalRandomVariable[Mean=7.|Variance=1.|Bound=10.]")
+			 */
 
 
 			ApplicationContainer serverApps;
@@ -190,10 +202,12 @@ main (int argc, char *argv[])
 
 			Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
+			//Install flow monitor in all nodes
 			Ptr<FlowMonitor> flowMonitor;
 			FlowMonitorHelper flowHelper;
 			flowMonitor = flowHelper.InstallAll();
 
+			//Run simulation
 			Simulator::Stop (Seconds (tempoExecucao));
 
 			/*
@@ -212,9 +226,65 @@ main (int argc, char *argv[])
 
 			flowMonitor->SerializeToXmlFile(oss.str(), true, true);
 
+			flowMonitor->CheckForLostPackets();
+			Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier>(flowHelper.GetClassifier());
+			FlowMonitor::FlowStatsContainer stats = flowMonitor->GetFlowStats ();
+			for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
+			{
+				// first 2 FlowIds are for ECHO apps, we don't want to display them
+				//
+				// Duration for throughput measurement is 9.0 seconds, since
+				//   StartTime of the OnOffApplication is at about "second 1"
+				// and
+				//   Simulator::Stops at "second 10".
+				//if (i->first > 2)
+				//{
+					Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
+					std::cout << "\n";
+					std::cout << "Flow " << i->first << " (" << t.sourceAddress << " -> " << t.destinationAddress << ")\n";
+					std::cout << "  Tx Packets: " << i->second.txPackets << "\n";
+					std::cout << "  Tx Bytes:   " << i->second.txBytes << "\n";
+					std::cout << "  TxOffered:  " << i->second.txBytes * 8.0 / 9.0 / 1000 / 1000  << " Mbps\n";
+					std::cout << "  Rx Packets: " << i->second.rxPackets << "\n";
+					std::cout << "  Rx Bytes:   " << i->second.rxBytes << "\n";
+					std::cout << "  Throughput: " << i->second.rxBytes * 8.0 / 9.0 / 1000 / 1000  << " Mbps\n";
+
+					std::cout << "  timeFirstTxPacket: " << i->second.timeFirstTxPacket  << " \n";
+					std::cout << "  timeFirstRxPacket: " << i->second.timeFirstRxPacket  << " \n";
+					std::cout << "  timeLastTxPacket: " << i->second.timeLastTxPacket  << " \n";
+					std::cout << "  timeLastRxPacket: " << i->second.timeLastRxPacket  << " \n";
+					std::cout << "  DelaySum: " << i->second.delaySum  << " \n";
+					if(k==1){
+						delaySumNodes[i->first-1]  = i->second.delaySum;
+					} else {
+						delaySumNodes[i->first-1]  += i->second.delaySum;
+					}
+					std::cout << "  JitterSum: " << i->second.jitterSum  << " \n";
+					std::cout << "  lastDelay: " << i->second.lastDelay  << " \n";
+					std::cout << "  txBytes: " << i->second.txBytes  << " \n";
+					std::cout << "  rxBytes: " << i->second.rxBytes  << " \n";
+					std::cout << "  txPackets: " << i->second.txPackets  << " \n";
+					std::cout << "  rxPackets: " << i->second.rxPackets  << " \n";
+					std::cout << "  lostPackets: " << i->second.lostPackets  << " \n";
+					std::cout << "  timesForwarded: " << i->second.timesForwarded  << " \n";
+				//}
+			}
+
+
 			Simulator::Destroy ();
+		}//fim das repetições
+
+		std::cout << "\n\n";
+		std::cout << "Número de nós do wifi: " << nWifi << " \n";
+		std::cout << "Quantidade de repetições: " << repeticao << " \n";
+		for(uint32_t j = 0; j < nWifi*2; j++) {
+			std::cout << " Soma Delay: " << delaySumNodes[j]  << " \n";
+			std::cout << " Média Delay: " << delaySumNodes[j]/repeticao  << " \n";
 		}
+
 	}
+
+
 
 	return 0;
 }
