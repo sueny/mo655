@@ -200,15 +200,6 @@ main (int argc, char *argv[])
 			onOffHelper.SetAttribute ("DataRate",StringValue ("1Mbps"));
 			onOffHelper.SetAttribute ("PacketSize", UintegerValue (1426));
 
-			/*
-			 * client = ns.applications.OnOffHelper("ns3::TcpSocketFactory", csmaInterfaces.GetAddress(nCsma))
-    client.SetAttribute("PacketSize", ns.core.UintegerValue(1440)) # +60 header
-    client.SetAttribute("MaxBytes", ns.core.UintegerValue(0))
-    client.SetAttribute("DataRate", ns3.DataRateValue(ns3.DataRate("1Mbps")))
-    client.SetAttribute("OnTime", ns.core.StringValue("ns3::NormalRandomVariable[Mean=5.|Variance=1.|Bound=10.]"))
-client.SetAttribute("OffTime", ns.core.StringValue("ns3::NormalRandomVariable[Mean=7.|Variance=1.|Bound=10.]")
-			 */
-
 
 			ApplicationContainer serverApps;
 			ApplicationContainer clientApps;
@@ -344,21 +335,31 @@ client.SetAttribute("OffTime", ns.core.StringValue("ns3::NormalRandomVariable[Me
 
 		for(uint32_t j = 0; j < nWifi*2; j++) {
 
-			std::cout << "\n\n Flow: " << j+1;
-		    std::cout << " Source: " << source[j]  << " \t Destination: " << destination[j] << "  \n";
-			std::cout << " Soma timeFirstTxPacket: " << timeFirstTxPacketMR[j]  << " \t Média Repetições: " << timeFirstTxPacketMR[j]/repeticao << "  \n";
-			std::cout << " Soma timeFirstRxPacket: " << timeFirstRxPacketMR[j]  << " \t Média Repetições: " << timeFirstRxPacketMR[j]/repeticao << "  \n";
-			std::cout << " Soma timeLastTxPacket: " << timeLastTxPacketMR[j]  << " \t Média Repetições: " << timeLastTxPacketMR[j]/repeticao << "  \n";
-			std::cout << " Soma timeLastRxPacket: " << timeLastRxPacketMR[j]  << " \t Média Repetições: " << timeLastRxPacketMR[j]/repeticao << "  \n";
-			std::cout << " Soma delaySum: " << delaySumMR[j]  << " \t Média Repetições: " << delaySumMR[j]/repeticao << "  \n";
-			std::cout << " Soma jitterSum: " << jitterSumMR[j]  << " \t Média Repetições: " << jitterSumMR[j]/repeticao << "  \n";
-			std::cout << " Soma lastDelay: " << lastDelayMR[j]  << " \t Média Repetições: " << lastDelayMR[j]/repeticao << "  \n";
-			std::cout << " Soma txBytes: " << txBytesMR[j]  << " \t Média Repetições: " << txBytesMR[j]/repeticao << "  \n";
-			std::cout << " Soma rxBytes: " << rxBytesMR[j]  << " \t Média Repetições: " << rxBytesMR[j]/repeticao << "  \n";
-			std::cout << " Soma txPackets: " << txPacketsMR[j]  << " \t Média Repetições: " << txPacketsMR[j]/repeticao << "  \n";
-			std::cout << " Soma rxPackets: " << rxPacketsMR[j]  << " \t Média Repetições: " << rxPacketsMR[j]/repeticao << "  \n";
-			std::cout << " Soma lostPackets: " << lostPacketsMR[j]  << " \t Média Repetições: " << lostPacketsMR[j]/repeticao << "  \n";
-			std::cout << "\n\n";
+			std::cout << "\n\n\n Flow: " << j+1;
+			std::cout << " \tSource: " << source[j]  << " \t Destination: " << destination[j] << "  \n";
+			std::cout << " \tSoma timeFirstTxPacket: " << timeFirstTxPacketMR[j]  << " \t Média Repetições: " << timeFirstTxPacketMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma timeFirstRxPacket: " << timeFirstRxPacketMR[j]  << " \t Média Repetições: " << timeFirstRxPacketMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma timeLastTxPacket: " << timeLastTxPacketMR[j]  << " \t Média Repetições: " << timeLastTxPacketMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma timeLastRxPacket: " << timeLastRxPacketMR[j]  << " \t Média Repetições: " << timeLastRxPacketMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma delaySum: " << delaySumMR[j]  << " \t Média Repetições: " << delaySumMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma jitterSum: " << jitterSumMR[j]  << " \t Média Repetições: " << jitterSumMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma lastDelay: " << lastDelayMR[j]  << " \t Média Repetições: " << lastDelayMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma txBytes: " << txBytesMR[j]  << " \t Média Repetições: " << txBytesMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma rxBytes: " << rxBytesMR[j]  << " \t Média Repetições: " << rxBytesMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma txPackets: " << txPacketsMR[j]  << " \t Média Repetições: " << txPacketsMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma rxPackets: " << rxPacketsMR[j]  << " \t Média Repetições: " << rxPacketsMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma lostPackets: " << lostPacketsMR[j]  << " \t Média Repetições: " << lostPacketsMR[j]/repeticao << "  \n";
+			std::cout << "\n";
+
+			std::cout << " \tCálculos importantes:";
+			std::cout << " \tMean delay:  " << (delaySumMR[j]/repeticao)/(rxPacketsMR[j]/repeticao) << "  \n";
+			std::cout << " \tMean jitter:  " << (jitterSumMR[j]/repeticao)/((rxPacketsMR[j]/repeticao)-1) << "  \n";
+			std::cout << " \tMean transmitted packet size (byte):  " << (txBytesMR[j]/repeticao)/(txPacketsMR[j]/repeticao) << "  \n";
+			std::cout << " \tMean received packet size (byte):  " << (rxBytesMR[j]/repeticao)/(rxPacketsMR[j]/repeticao) << "  \n";
+			std::cout << " \tMean transmitted bitrate (bit/s):  " << (8 * txBytesMR[j]/repeticao)/((timeLastTxPacketMR[j]/repeticao)-(timeFirstTxPacketMR[j]/repeticao)) << "  \n";
+			std::cout << " \tMean received bitrate (bit/s):  " << (8 * rxBytesMR[j]/repeticao)/((timeLastRxPacketMR[j]/repeticao)-(timeFirstRxPacketMR[j]/repeticao)) << "  \n";
+			std::cout << " \tMean packet loss ratio:  " << (lostPacketsMR[j]/repeticao)/((rxPacketsMR[j]/repeticao)+(lostPacketsMR[j]/repeticao)) << "  \n";
+
 		}
 
 	}
