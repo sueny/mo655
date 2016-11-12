@@ -62,9 +62,6 @@ main (int argc, char *argv[])
 
 		uint32_t nWifi = z * 5;
 
-		//std::vector<std::string> source[nWifi*2];
-		//std::vector<std::string> destination[nWifi*2];
-
 		Ipv4Address source[nWifi*2];
 		Ipv4Address destination[nWifi*2];
 

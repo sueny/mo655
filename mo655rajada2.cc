@@ -47,15 +47,13 @@ NS_LOG_COMPONENT_DEFINE ("RajadaWithMobilityProgram");
 int 
 main (int argc, char *argv[])
 {
-	uint32_t qtddExec = 40/5;
-	uint32_t repeticao = 10;
-	
-	uint64_t packetSize = 1426;
-	
+	uint32_t qtddExec = 5/5;
+	uint32_t repeticao = 2;
+
 	bool verbose = true;
 	uint32_t nServer = 0;
 	float tempoExecucao = 10.0;
-	
+
 	bool tracing = true;
 
 	CommandLine cmd;
@@ -64,11 +62,38 @@ main (int argc, char *argv[])
 	cmd.AddValue ("tracing", "Enable pcap tracing", tracing);
 
 	cmd.Parse (argc,argv);
-	
-	for (uint32_t i = 1; i <= qtddExec; i++) {
+
+	for (uint32_t z = 1; z <= qtddExec; z++) {
+
+		uint32_t nWifi = z * 5;
+
+		Ipv4Address source[nWifi*2];
+		Ipv4Address destination[nWifi*2];
+
+		Time timeFirstTxPacketMR[nWifi*2];
+		Time timeFirstRxPacketMR[nWifi*2];
+		Time timeLastTxPacketMR[nWifi*2];
+		Time timeLastRxPacketMR[nWifi*2];
+		Time delaySumMR[nWifi*2];
+		Time jitterSumMR[nWifi*2];
+		Time lastDelayMR[nWifi*2];
+
+		uint64_t txBytesMR[nWifi*2];
+		uint64_t rxBytesMR[nWifi*2];
+		uint64_t txPacketsMR[nWifi*2];
+		uint64_t rxPacketsMR[nWifi*2];
+		uint64_t lostPacketsMR[nWifi*2];
+
+		for(uint32_t j = 0; j < nWifi*2; j++) {
+			txBytesMR[j] = 0;
+			rxBytesMR[j] = 0;
+			txPacketsMR[j] = 0;
+			rxPacketsMR[j] = 0;
+			lostPacketsMR[j] = 0;
+		}
+
 		for (uint32_t k = 1; k <= repeticao; k++) {
 
-			uint32_t nWifi = i* 5;
 			cmd.AddValue ("nWifi", "Number of wifi STA devices", nWifi);
 
 			Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1440));
@@ -163,13 +188,14 @@ main (int argc, char *argv[])
 			address.Assign (staDevices);
 			address.Assign (apDevices);
 
+
 			OnOffHelper onOffHelper ("ns3::TcpSocketFactory", p2pInterfaces.GetAddress (1));
 			onOffHelper.SetAttribute ("OnTime", StringValue
-					("ns3::NormalRandomVariable[Mean=2.|Variance=2.|Bound=10.]"));
+					("ns3::NormalRandomVariable[Mean=5.0|Variance=1.0|Bound=10.0]"));
 			onOffHelper.SetAttribute ("OffTime", StringValue
-					("ns3::NormalRandomVariable[Mean=2.|Variance=1.|Bound=10.]"));
+					("ns3::NormalRandomVariable[Mean=7.0|Variance=1.0|Bound=10.0]"));
 			onOffHelper.SetAttribute ("DataRate",StringValue ("1Mbps"));
-			onOffHelper.SetAttribute ("PacketSize", UintegerValue (packetSize));
+			onOffHelper.SetAttribute ("PacketSize", UintegerValue (1426));
 
 
 			ApplicationContainer serverApps;
@@ -213,9 +239,79 @@ main (int argc, char *argv[])
 
 			flowMonitor->SerializeToXmlFile(oss.str(), true, true);
 
+
+			flowMonitor->CheckForLostPackets();
+			Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier>(flowHelper.GetClassifier());
+			FlowMonitor::FlowStatsContainer stats = flowMonitor->GetFlowStats ();
+			for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
+			{
+				Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
+
+				if(k==1){
+
+					source[i->first-1] = t.sourceAddress;
+					destination[i->first-1] = t.destinationAddress;
+
+					timeFirstTxPacketMR[i->first-1]  = i->second.timeFirstTxPacket;
+					timeFirstRxPacketMR[i->first-1]  = i->second.timeFirstRxPacket;
+					timeLastTxPacketMR[i->first-1]  = i->second.timeLastTxPacket;
+					timeLastRxPacketMR[i->first-1]  = i->second.timeLastRxPacket;
+					delaySumMR[i->first-1]  = i->second.delaySum;
+					jitterSumMR[i->first-1]  = i->second.jitterSum;
+					lastDelayMR[i->first-1]  = i->second.lastDelay;
+				} else {
+					timeFirstTxPacketMR[i->first-1] += i->second.timeFirstTxPacket;
+					timeFirstRxPacketMR[i->first-1] += i->second.timeFirstRxPacket;
+					timeLastTxPacketMR[i->first-1] += i->second.timeLastTxPacket;
+					timeLastRxPacketMR[i->first-1] += i->second.timeLastRxPacket;
+					delaySumMR[i->first-1] += i->second.delaySum;
+					jitterSumMR[i->first-1] += i->second.jitterSum;
+					lastDelayMR[i->first-1] += i->second.lastDelay;
+				}
+
+				txBytesMR[i->first-1] += i->second.txBytes;
+				rxBytesMR[i->first-1] += i->second.rxBytes;
+				txPacketsMR[i->first-1] += i->second.txPackets;
+				rxPacketsMR[i->first-1] += i->second.rxPackets;
+				lostPacketsMR[i->first-1] += i->second.lostPackets;
+			}
+
 			Simulator::Destroy ();
 		}
+
+		std::cout << "\n\n";
+		std::cout << "Número de nós do wifi: " << nWifi << " \n";
+		std::cout << "Quantidade de repetições: " << repeticao << " \n";
+
+		for(uint32_t j = 0; j < nWifi*2; j++) {
+
+			std::cout << "\n\n\n Flow: " << j+1;
+			std::cout << " \tSource: " << source[j]  << " \t Destination: " << destination[j] << "  \n";
+			std::cout << " \tSoma timeFirstTxPacket: " << timeFirstTxPacketMR[j]  << " \t Média Repetições: " << timeFirstTxPacketMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma timeFirstRxPacket: " << timeFirstRxPacketMR[j]  << " \t Média Repetições: " << timeFirstRxPacketMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma timeLastTxPacket: " << timeLastTxPacketMR[j]  << " \t Média Repetições: " << timeLastTxPacketMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma timeLastRxPacket: " << timeLastRxPacketMR[j]  << " \t Média Repetições: " << timeLastRxPacketMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma delaySum: " << delaySumMR[j]  << " \t Média Repetições: " << delaySumMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma jitterSum: " << jitterSumMR[j]  << " \t Média Repetições: " << jitterSumMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma lastDelay: " << lastDelayMR[j]  << " \t Média Repetições: " << lastDelayMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma txBytes: " << txBytesMR[j]  << " \t Média Repetições: " << txBytesMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma rxBytes: " << rxBytesMR[j]  << " \t Média Repetições: " << rxBytesMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma txPackets: " << txPacketsMR[j]  << " \t Média Repetições: " << txPacketsMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma rxPackets: " << rxPacketsMR[j]  << " \t Média Repetições: " << rxPacketsMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma lostPackets: " << lostPacketsMR[j]  << " \t Média Repetições: " << lostPacketsMR[j]/repeticao << "  \n";
+			std::cout << "\n";
+
+			std::cout << " \tCálculos importantes:";
+			std::cout << " \tMean delay:  " << (delaySumMR[j]/repeticao)/(rxPacketsMR[j]/repeticao) << "  \n";
+			std::cout << " \tMean jitter:  " << (jitterSumMR[j]/repeticao)/((rxPacketsMR[j]/repeticao)-1) << "  \n";
+			std::cout << " \tMean transmitted packet size (byte):  " << (txBytesMR[j]/repeticao)/(txPacketsMR[j]/repeticao) << "  \n";
+			std::cout << " \tMean received packet size (byte):  " << (rxBytesMR[j]/repeticao)/(rxPacketsMR[j]/repeticao) << "  \n";
+			std::cout << " \tMean transmitted bitrate (bit/s):  " << (8 * txBytesMR[j]/repeticao)/((timeLastTxPacketMR[j]/repeticao)-(timeFirstTxPacketMR[j]/repeticao)) << "  \n";
+			std::cout << " \tMean received bitrate (bit/s):  " << (8 * rxBytesMR[j]/repeticao)/((timeLastRxPacketMR[j]/repeticao)-(timeFirstRxPacketMR[j]/repeticao)) << "  \n";
+			std::cout << " \tMean packet loss ratio:  " << (lostPacketsMR[j]/repeticao)/((rxPacketsMR[j]/repeticao)+(lostPacketsMR[j]/repeticao)) << "  \n";
+
+		}
 	}
-	
+
 	return 0;
 }
