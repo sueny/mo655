@@ -23,6 +23,7 @@
 #include "ns3/csma-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/flow-monitor-module.h"
+#include "ns3/netanim-module.h"
 #include <sstream>
 
 // Default Network Topology
@@ -42,19 +43,23 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("RajadaWithMobilityProgram");
+NS_LOG_COMPONENT_DEFINE ("CBRwithMobilityProgram");
 
 int 
 main (int argc, char *argv[])
 {
-	uint32_t qtddExec = 5/5;
-	uint32_t repeticao = 2;
+	uint32_t qtddExec = 40/5;
+	uint32_t repeticao = 1;
+
+	uint64_t maxPackets = 1000000;
+	double timeInterval = 0.003824;
+	uint64_t packetSize = 450;
 
 	bool verbose = true;
 	uint32_t nServer = 0;
 	float tempoExecucao = 10.0;
 
-	bool tracing = true;
+	bool tracing = false;
 
 	CommandLine cmd;
 	cmd.AddValue ("nServer", "Number of server", nServer);
@@ -67,24 +72,24 @@ main (int argc, char *argv[])
 
 		uint32_t nWifi = z * 5;
 
-		Ipv4Address source[nWifi*2];
-		Ipv4Address destination[nWifi*2];
+		Ipv4Address source[nWifi];
+		Ipv4Address destination[nWifi];
 
-		Time timeFirstTxPacketMR[nWifi*2];
-		Time timeFirstRxPacketMR[nWifi*2];
-		Time timeLastTxPacketMR[nWifi*2];
-		Time timeLastRxPacketMR[nWifi*2];
-		Time delaySumMR[nWifi*2];
-		Time jitterSumMR[nWifi*2];
-		Time lastDelayMR[nWifi*2];
+		Time timeFirstTxPacketMR[nWifi];
+		Time timeFirstRxPacketMR[nWifi];
+		Time timeLastTxPacketMR[nWifi];
+		Time timeLastRxPacketMR[nWifi];
+		Time delaySumMR[nWifi];
+		Time jitterSumMR[nWifi];
+		Time lastDelayMR[nWifi];
 
-		uint64_t txBytesMR[nWifi*2];
-		uint64_t rxBytesMR[nWifi*2];
-		uint64_t txPacketsMR[nWifi*2];
-		uint64_t rxPacketsMR[nWifi*2];
-		uint64_t lostPacketsMR[nWifi*2];
+		uint64_t txBytesMR[nWifi];
+		uint64_t rxBytesMR[nWifi];
+		uint64_t txPacketsMR[nWifi];
+		uint64_t rxPacketsMR[nWifi];
+		uint64_t lostPacketsMR[nWifi];
 
-		for(uint32_t j = 0; j < nWifi*2; j++) {
+		for(uint32_t j = 0; j < nWifi; j++) {
 			txBytesMR[j] = 0;
 			rxBytesMR[j] = 0;
 			txPacketsMR[j] = 0;
@@ -93,14 +98,8 @@ main (int argc, char *argv[])
 		}
 
 		for (uint32_t k = 1; k <= repeticao; k++) {
-
 			cmd.AddValue ("nWifi", "Number of wifi STA devices", nWifi);
 
-			Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1440));
-
-			// Check for valid number of csma or wifi nodes
-			// 250 should be enough, otherwise IP addresses
-			// soon become an issue
 			if (nWifi > 250 || nServer > 250)
 			{
 				std::cout << "Too many wifi or csma nodes, no more than 250 each." << std::endl;
@@ -109,7 +108,7 @@ main (int argc, char *argv[])
 
 			if (verbose)
 			{
-				LogComponentEnable ("OnOffApplication", LOG_LEVEL_INFO);
+				LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
 				LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
 			}
 
@@ -123,8 +122,6 @@ main (int argc, char *argv[])
 			NetDeviceContainer p2pDevices;
 			p2pDevices = pointToPoint.Install (p2pNodes);
 
-
-
 			NodeContainer serverNode;
 			serverNode.Add (p2pNodes.Get (1));
 
@@ -133,6 +130,8 @@ main (int argc, char *argv[])
 			wifiStaNodes.Create (nWifi);
 			NodeContainer wifiApNode = p2pNodes.Get (0);
 
+
+			///Parte wireless, haciendo la definición para el alcance de cada nodo
 			YansWifiChannelHelper channel = YansWifiChannelHelper::Default ();
 			YansWifiPhyHelper phy = YansWifiPhyHelper::Default ();
 			phy.SetChannel (channel.Create ());
@@ -157,21 +156,32 @@ main (int argc, char *argv[])
 
 			MobilityHelper mobility;
 
+			mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+									mobility.Install (serverNode);
+
 			mobility.SetPositionAllocator ("ns3::GridPositionAllocator",
-					"MinX", DoubleValue (0.0),
-					"MinY", DoubleValue (0.0),
-					"DeltaX", DoubleValue (5.0),
-					"DeltaY", DoubleValue (10.0),
-					"GridWidth", UintegerValue (3),
-					"LayoutType", StringValue ("RowFirst"));
-
-			mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
-					"Bounds", RectangleValue (Rectangle (-50, 50, -50, 50))
-			);
-			mobility.Install (wifiStaNodes);
-
+									"MinX", DoubleValue (20.0),
+									"MinY", DoubleValue (0.0),
+									"DeltaX", DoubleValue (1.0),
+									"DeltaY", DoubleValue (1.0),
+									"GridWidth", UintegerValue (1),
+									"LayoutType", StringValue ("RowFirst"));
 			mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 			mobility.Install (wifiApNode);
+
+
+			mobility.SetPositionAllocator ("ns3::GridPositionAllocator",
+								"MinX", DoubleValue (10.0),
+								"MinY", DoubleValue (2.0),
+								"DeltaX", DoubleValue (5.0),
+								"DeltaY", DoubleValue (2.0),
+								"GridWidth", UintegerValue (5),
+								"LayoutType", StringValue ("RowFirst"));
+
+			mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
+						"Bounds", RectangleValue (Rectangle (0, 40, 0, 40))
+						);
+			mobility.Install (wifiStaNodes);
 
 			InternetStackHelper stack;
 			stack.Install (serverNode);
@@ -180,41 +190,33 @@ main (int argc, char *argv[])
 
 			Ipv4AddressHelper address;
 
-			address.SetBase ("10.1.1.0", "255.255.255.0");
+			address.SetBase ("10.0.0.0", "255.255.255.0");
 			Ipv4InterfaceContainer p2pInterfaces;
 			p2pInterfaces = address.Assign (p2pDevices);
 
-			address.SetBase ("10.1.2.0", "255.255.255.0");
+			address.SetBase ("192.168.0.0", "255.255.255.0");
 			address.Assign (staDevices);
 			address.Assign (apDevices);
 
+			PacketSinkHelper  echoServer ("ns3::UdpSocketFactory", InetSocketAddress (p2pInterfaces.GetAddress (1), 9));
 
-			OnOffHelper onOffHelper ("ns3::TcpSocketFactory", p2pInterfaces.GetAddress (1));
-			onOffHelper.SetAttribute ("OnTime", StringValue
-					("ns3::NormalRandomVariable[Mean=5.0|Variance=1.0|Bound=10.0]"));
-			onOffHelper.SetAttribute ("OffTime", StringValue
-					("ns3::NormalRandomVariable[Mean=7.0|Variance=1.0|Bound=10.0]"));
-			onOffHelper.SetAttribute ("DataRate",StringValue ("1Mbps"));
-			onOffHelper.SetAttribute ("PacketSize", UintegerValue (1426));
+			ApplicationContainer serverApps = echoServer.Install (serverNode.Get (0));
+			serverApps.Start (Seconds (1.0));
+			serverApps.Stop (Seconds (tempoExecucao));
 
 
-			ApplicationContainer serverApps;
+			UdpEchoClientHelper echoClient (p2pInterfaces.GetAddress (1), 9);
+			echoClient.SetAttribute ("MaxPackets", UintegerValue (maxPackets));
+			echoClient.SetAttribute ("Interval", TimeValue (Seconds (timeInterval)));
+			echoClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
+
 			ApplicationContainer clientApps;
-
 			for (uint32_t i = 0; i < nWifi; i++) {
-				AddressValue sinkAddress (InetSocketAddress (p2pInterfaces.GetAddress (1), 9+i));
-				PacketSinkHelper  echoServer ("ns3::TcpSocketFactory", InetSocketAddress (p2pInterfaces.GetAddress (1), 9+i));
-				serverApps.Add(echoServer.Install (serverNode.Get (0)));
-
-				onOffHelper.SetAttribute("Remote", sinkAddress);
-				clientApps.Add(onOffHelper.Install (wifiStaNodes.Get (i)));
+				clientApps.Add(echoClient.Install (wifiStaNodes.Get (i)));
 			}
-
 			clientApps.Start (Seconds (2.0));
 			clientApps.Stop (Seconds (tempoExecucao));
 
-			serverApps.Start (Seconds (1.0));
-			serverApps.Stop (Seconds (tempoExecucao));
 
 			Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
@@ -226,19 +228,19 @@ main (int argc, char *argv[])
 
 			if (tracing == true)
 			{
-				pointToPoint.EnableAsciiAll ("third");
-				phy.EnableAscii ("third", apDevices.Get (0));
+				pointToPoint.EnablePcapAll ("third");
+				phy.EnablePcap ("third", apDevices.Get (0));
 				// csma.EnablePcap ("third", csmaDevices.Get (0), true);
 			}
 
 			Simulator::Run ();
+			AnimationInterface anim ("sim/cbrMobility/animation.xml");
 
 			std::ostringstream oss;
-			oss << "mo655/simulation/rajadaWithMobility" << "-" << nWifi << "-" << k << ".xml";
+			oss << "sim/cbrMobility/" << nWifi << "-" << k << ".xml";
 			std::cout << oss.str();
 
 			flowMonitor->SerializeToXmlFile(oss.str(), true, true);
-
 
 			flowMonitor->CheckForLostPackets();
 			Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier>(flowHelper.GetClassifier());
@@ -276,6 +278,7 @@ main (int argc, char *argv[])
 				lostPacketsMR[i->first-1] += i->second.lostPackets;
 			}
 
+
 			Simulator::Destroy ();
 		}
 
@@ -283,7 +286,7 @@ main (int argc, char *argv[])
 		std::cout << "Número de nós do wifi: " << nWifi << " \n";
 		std::cout << "Quantidade de repetições: " << repeticao << " \n";
 
-		for(uint32_t j = 0; j < nWifi*2; j++) {
+		for(uint32_t j = 0; j < nWifi; j++) {
 
 			std::cout << "\n\n\n Flow: " << j+1;
 			std::cout << " \tSource: " << source[j]  << " \t Destination: " << destination[j] << "  \n";
