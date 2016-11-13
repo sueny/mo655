@@ -75,6 +75,7 @@ main (int argc, char *argv[])
 		Ipv4Address source[nWifi];
 		Ipv4Address destination[nWifi];
 
+		/*Variáveis que acumulam a soma para depois calcular a média*/
 		Time timeFirstTxPacketMR[nWifi];
 		Time timeFirstRxPacketMR[nWifi];
 		Time timeLastTxPacketMR[nWifi];
@@ -87,7 +88,7 @@ main (int argc, char *argv[])
 		uint64_t rxBytesMR[nWifi];
 		uint64_t txPacketsMR[nWifi];
 		uint64_t rxPacketsMR[nWifi];
-		uint64_t lostPacketsMR[nWifi];
+		uint64_t lostPacketsMR[nWifi];		
 
 		for(uint32_t j = 0; j < nWifi; j++) {
 			txBytesMR[j] = 0;
@@ -97,6 +98,23 @@ main (int argc, char *argv[])
 			lostPacketsMR[j] = 0;
 		}
 
+		
+		/*Variáveis para armazenar o valor de cada NÓ para depois calcular o desvio padrão*/
+		Time timeFirstTxPacketNO[nWifi][repeticao];
+		Time timeFirstRxPacketNO[nWifi][repeticao];
+		Time timeLastTxPacketNO[nWifi][repeticao];
+		Time timeLastRxPacketNO[nWifi][repeticao];
+		Time delaySumNO[nWifi][repeticao];
+		Time jitterSumNO[nWifi][repeticao];
+		Time lastDelayNO[nWifi][repeticao];
+
+		uint64_t txBytesNO[nWifi][repeticao];
+		uint64_t rxBytesNO[nWifi][repeticao];
+		uint64_t txPacketsNO[nWifi][repeticao];
+		uint64_t rxPacketsNO[nWifi][repeticao];
+		uint64_t lostPacketsNO[nWifi][repeticao];
+		
+		
 		for (uint32_t k = 1; k <= repeticao; k++) {
 			cmd.AddValue ("nWifi", "Number of wifi STA devices", nWifi);
 
@@ -246,8 +264,8 @@ main (int argc, char *argv[])
 			{
 				Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
 
+				/*Soma os valores de cada repetição de cada nó para depois calcular a média*/
 				if(k==1){
-
 					source[i->first-1] = t.sourceAddress;
 					destination[i->first-1] = t.destinationAddress;
 
@@ -273,6 +291,20 @@ main (int argc, char *argv[])
 				txPacketsMR[i->first-1] += i->second.txPackets;
 				rxPacketsMR[i->first-1] += i->second.rxPackets;
 				lostPacketsMR[i->first-1] += i->second.lostPackets;
+				
+				/*Guarda o valor de cada nó*/
+				timeFirstTxPacketNO[i->first-1][k] = i->second.timeFirstTxPacket;
+				timeFirstRxPacketNO[i->first-1][k] = i->second.timeFirstRxPacket;
+				timeLastTxPacketNO[i->first-1][k] = i->second.timeLastTxPacket;
+				timeLastRxPacketNO[i->first-1][k] = i->second.timeLastRxPacket;
+				delaySumNO[i->first-1][k] = i->second.delaySum;
+				jitterSumNO[i->first-1][k] = i->second.jitterSum;
+				lastDelayNO[i->first-1][k] = i->second.lastDelay;
+				txBytesNO[i->first-1][k] = i->second.txBytes;
+				rxBytesNO[i->first-1][k] = i->second.rxBytes;
+				txPacketsNO[i->first-1][k] = i->second.txPackets;
+				rxPacketsNO[i->first-1][k] = i->second.rxPackets;
+				lostPacketsNO[i->first-1][k] = i->second.lostPackets;
 			}
 
 
@@ -284,11 +316,40 @@ main (int argc, char *argv[])
 		std::cout << "Quantidade de repetições: " << repeticao << " \n";
 
 		for(uint32_t j = 0; j < nWifi; j++) {
+			
+			Time timeFirstTxPacketDPsum =  pow ((timeFirstTxPacketNO[j][0] - (timeFirstTxPacketMR[j]/repeticao)), 2.0);
+			Time timeFirstRxPacketDPsum = pow ((timeFirstRxPacketNO[j][0] - (timeFirstRxPacketMR[j]/repeticao)), 2.0);
+			Time timeLastTxPacketDPsum = pow ((timeLastTxPacketNO[j][0] - (timeLastTxPacketMR[j]/repeticao)), 2.0);
+			Time timeLastRxPacketDPsum = pow ((timeLastRxPacketNO[j][0] - (timeLastRxPacketMR[j]/repeticao)), 2.0);
+			Time delaySumDPsum = pow ((delaySumNO[j][0] - (delaySumMR[j]/repeticao)), 2.0);
+			Time jitterSumDPsum = pow ((jitterSumNO[j][0] - (jitterSumMR[j]/repeticao)), 2.0);
+			Time lastDelayDPsum= pow ((lastDelayNO[j][0] - (lastDelayMR[j]/repeticao)), 2.0);
+			double txBytesDPsum = pow ((txBytesNO[j][0] - (txBytesMR[j]/repeticao)), 2.0);
+			double rxBytesDPsum = pow ((rxBytesNO[j][0] - (rxBytesMR[j]/repeticao)), 2.0);
+			double txPacketsDPsum = pow ((txPacketsNO[j][0] - (txPacketsMR[j]/repeticao)), 2.0);
+			double rxPacketsDPsum = pow ((rxPacketsNO[j][0] - (rxPacketsMR[j]/repeticao)), 2.0);
+			double lostPacketsDPsum = pow ((lostPacketsNO[j][0] - (lostPacketsMR[j]/repeticao)), 2.0);
+			
+			//começa em um porque as variáveis já foram inicializadas com a posição 1 do vetor
+			for(uint32_t l = 1; l < repeticao; l++) {
+				timeFirstTxPacketDPsum +=  pow ((timeFirstTxPacketNO[j][l] - (timeFirstTxPacketMR[j]/repeticao)), 2.0);
+				timeFirstRxPacketDPsum += pow ((timeFirstRxPacketNO[j][l] - (timeFirstRxPacketMR[j]/repeticao)), 2.0);
+				timeLastTxPacketDPsum += pow ((timeLastTxPacketNO[j][l] - (timeLastTxPacketMR[j]/repeticao)), 2.0);
+				timeLastRxPacketDPsum += pow ((timeLastRxPacketNO[j][l] - (timeLastRxPacketMR[j]/repeticao)), 2.0);
+				delaySumDPsum += pow ((delaySumNO[j][l] - (delaySumMR[j]/repeticao)), 2.0);
+				jitterSumDPsum += pow ((jitterSumNO[j][l] - (jitterSumMR[j]/repeticao)), 2.0);
+				lastDelayDPsum += pow ((lastDelayNO[j][l] - (lastDelayMR[j]/repeticao)), 2.0);
+				txBytesDPsum += pow ((txBytesNO[j][l] - (txBytesMR[j]/repeticao)), 2.0);
+				rxBytesDPsum += pow ((rxBytesNO[j][l] - (rxBytesMR[j]/repeticao)), 2.0);
+				txPacketsDPsum += pow ((txPacketsNO[j][l] - (txPacketsMR[j]/repeticao)), 2.0);
+				rxPacketsDPsum += pow ((rxPacketsNO[j][l] - (rxPacketsMR[j]/repeticao)), 2.0);
+				lostPacketsDPsum += pow ((lostPacketsNO[j][l] - (lostPacketsMR[j]/repeticao)), 2.0);
+			}
 
 			std::cout << "\n\n\n Flow: " << j+1;
 			std::cout << " \tSource: " << source[j]  << " \t Destination: " << destination[j] << "  \n";
-			std::cout << " \tSoma timeFirstTxPacket: " << timeFirstTxPacketMR[j]  << " \t Média Repetições: " << timeFirstTxPacketMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma timeFirstRxPacket: " << timeFirstRxPacketMR[j]  << " \t Média Repetições: " << timeFirstRxPacketMR[j]/repeticao << "  \n";
+			std::cout << " \tSoma timeFirstTxPacket: " << timeFirstTxPacketMR[j]  << " \t Média Repetições: " << timeFirstTxPacketMR[j]/repeticao << " \t Desvio padrão: " << sqrt (timeFirstTxPacketDPsum / (repeticao-1)) << "  \n";
+			std::cout << " \tSoma timeFirstRxPacket: " << timeFirstRxPacketMR[j]  << " \t Média Repetições: " << timeFirstRxPacketMR[j]/repeticao << " \t Desvio padrão: " << sqrt (timeFirstRxPacketDPsum / (repeticao-1)) << "  \n";
 			std::cout << " \tSoma timeLastTxPacket: " << timeLastTxPacketMR[j]  << " \t Média Repetições: " << timeLastTxPacketMR[j]/repeticao << "  \n";
 			std::cout << " \tSoma timeLastRxPacket: " << timeLastRxPacketMR[j]  << " \t Média Repetições: " << timeLastRxPacketMR[j]/repeticao << "  \n";
 			std::cout << " \tSoma delaySum: " << delaySumMR[j]  << " \t Média Repetições: " << delaySumMR[j]/repeticao << "  \n";
