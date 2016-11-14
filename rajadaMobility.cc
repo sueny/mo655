@@ -37,8 +37,8 @@
 //  *    *    *    *
 //  |    |    |    |    10.1.1.0
 // n2   n3   n4   n0 -------------- n1  Server 10.1.1.2
-//                   point-to-point  
-//                                   
+//                   point-to-point
+//
 //
 // Obs:
 // Resultados exibidos em escala de segundos
@@ -78,12 +78,12 @@ double calcDesvioPadrao(uint32_t tamanho, uint64_t* valorDoNo, double media) {
 int 
 main (int argc, char *argv[])
 {
-	uint32_t qtddExec = 5/5;
-	uint32_t repeticao = 2;
+	uint32_t qtddExec = 40/5;
+	uint32_t repeticao = 10;
 
 	bool verbose = true;
 	uint32_t nServer = 0;
-	float tempoExecucao = 10.0;
+	float tempoExecucao = 100.0;
 
 	bool tracing = false;
 
@@ -164,11 +164,11 @@ main (int argc, char *argv[])
 				return 1;
 			}
 
-			if (verbose)
+			/*if (verbose)
 			{
 				LogComponentEnable ("OnOffApplication", LOG_LEVEL_INFO);
 				LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
-			}
+			}*/
 
 			NodeContainer p2pNodes;
 			p2pNodes.Create (2);
@@ -253,8 +253,9 @@ main (int argc, char *argv[])
 			p2pInterfaces = address.Assign (p2pDevices);
 
 			address.SetBase ("192.168.0.0", "255.255.255.0");
-			address.Assign (staDevices);
 			address.Assign (apDevices);
+			address.Assign (staDevices);
+
 
 
 
@@ -271,8 +272,8 @@ main (int argc, char *argv[])
 			ApplicationContainer clientApps;
 
 			for (uint32_t i = 0; i < nWifi; i++) {
-				AddressValue sinkAddress (InetSocketAddress (p2pInterfaces.GetAddress (1), 9+i));
-				PacketSinkHelper  echoServer ("ns3::TcpSocketFactory", InetSocketAddress (p2pInterfaces.GetAddress (1), 9+i));
+				AddressValue sinkAddress (InetSocketAddress (p2pInterfaces.GetAddress (1), 21+i));
+				PacketSinkHelper  echoServer ("ns3::TcpSocketFactory", InetSocketAddress (p2pInterfaces.GetAddress (1), 21+i));
 				serverApps.Add(echoServer.Install (serverNode.Get (0)));
 
 				onOffHelper.SetAttribute("Remote", sinkAddress);

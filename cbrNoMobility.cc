@@ -37,12 +37,10 @@
 //  *    *    *    *
 //  |    |    |    |    10.1.1.0
 // n2   n3   n4   n0 -------------- n1  Server 10.1.1.2
-//                   point-to-point  
+//                   point-to-point
 //
 // Obs:
 // Resultados exibidos em escala de segundos
-// executar comando : ./waf --run nomeDoArquivo > result.txt
-
 
 
 using namespace ns3;
@@ -74,8 +72,8 @@ double calcDesvioPadrao(uint32_t tamanho, uint64_t* valorDoNo, double media) {
 }
 
 int main (int argc, char *argv[]) {
-	uint32_t qtddExec = 5/5;
-	uint32_t repeticao = 2;
+	uint32_t qtddExec = 40/5;
+	uint32_t repeticao = 10;
 
 	uint64_t maxPackets = 1000000;
 	double timeInterval = 0.003824;
@@ -83,7 +81,7 @@ int main (int argc, char *argv[]) {
 
 	bool verbose = true;
 	uint32_t nServer = 0;
-	float tempoExecucao = 5.0;
+	float tempoExecucao = 100.0;
 
 	bool tracing = false;
 
@@ -114,7 +112,7 @@ int main (int argc, char *argv[]) {
 		uint64_t rxBytesMR[nWifi];
 		uint64_t txPacketsMR[nWifi];
 		uint64_t rxPacketsMR[nWifi];
-		uint64_t lostPacketsMR[nWifi];		
+		uint64_t lostPacketsMR[nWifi];
 
 		for(uint32_t j = 0; j < nWifi; j++) {
 			timeFirstTxPacketMR[j] = 0.0;
@@ -243,17 +241,17 @@ int main (int argc, char *argv[]) {
 			p2pInterfaces = address.Assign (p2pDevices);
 
 			address.SetBase ("192.168.0.0", "255.255.255.0");
-			address.Assign (staDevices);
 			address.Assign (apDevices);
+			address.Assign (staDevices);
 
-			PacketSinkHelper  echoServer ("ns3::UdpSocketFactory", InetSocketAddress (p2pInterfaces.GetAddress (1), 9));
+			PacketSinkHelper  echoServer ("ns3::UdpSocketFactory", InetSocketAddress (p2pInterfaces.GetAddress (1), 200));
 
 			ApplicationContainer serverApps = echoServer.Install (serverNode.Get (0));
 			serverApps.Start (Seconds (1.0));
 			serverApps.Stop (Seconds (tempoExecucao));
 
 
-			UdpEchoClientHelper echoClient (p2pInterfaces.GetAddress (1), 9);
+			UdpEchoClientHelper echoClient (p2pInterfaces.GetAddress (1), 200);
 			echoClient.SetAttribute ("MaxPackets", UintegerValue (maxPackets));
 			echoClient.SetAttribute ("Interval", TimeValue (Seconds (timeInterval)));
 			echoClient.SetAttribute ("PacketSize", UintegerValue (packetSize));
