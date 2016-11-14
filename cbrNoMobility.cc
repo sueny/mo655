@@ -49,7 +49,7 @@ using namespace std;
 NS_LOG_COMPONENT_DEFINE ("CBRwithoutMobilityProgram");
 
 void printEstatistica(string nomeVariavel, double soma, uint32_t repeticao, double dp) {
-	std::cout << " \t Média Repetições: " << soma/repeticao << " \t Desvio padrão: " << dp << "  \n";
+	std::cout << " \tMédia Repetições " << nomeVariavel <<  ": " << soma/repeticao << " \t Desvio padrão: " << dp << "  \n";
 	//std::cout << " \tSoma " << nomeVariavel <<  ": " << soma  << " \t Média Repetições: " << soma/repeticao << " \t Desvio padrão: " << dp << "  \n";
 }
 
@@ -71,9 +71,7 @@ double calcDesvioPadrao(uint32_t tamanho, uint64_t* valorDoNo, double media) {
 	return sqrt (acumSum/(tamanho-1));
 }
 
-int 
-main (int argc, char *argv[])
-{
+int main (int argc, char *argv[]) {
 	uint32_t qtddExec = 5/5;
 	uint32_t repeticao = 2;
 
@@ -341,38 +339,6 @@ main (int argc, char *argv[])
 		std::cout << "Quantidade de repetições: " << repeticao << " \n";
 
 		for(uint32_t j = 0; j < nWifi; j++) {
-
-			/*
-			 *
-			double timeFirstTxPacketDPsum = 0.0;
-			double timeFirstRxPacketDPsum = 0.0;
-			double timeLastTxPacketDPsum = 0.0;
-			double timeLastRxPacketDPsum = 0.0;
-			double delaySumDPsum = 0.0;
-			double jitterSumDPsum = 0.0;
-			double lastDelayDPsum= 0.0;
-			double txBytesDPsum = 0.0;
-			double rxBytesDPsum = 0.0;
-			double txPacketsDPsum = 0.0;
-			double rxPacketsDPsum = 0.0;
-			double lostPacketsDPsum = 0.0;
-
-			//Acumulador do somatório do desvio padrão
-			for(uint32_t l = 0; l < repeticao; l++) {
-
-				timeFirstTxPacketDPsum +=  pow ((timeFirstTxPacketNO[j][l] - (timeFirstTxPacketMR[j]/repeticao)), 2.0);
-				timeFirstRxPacketDPsum += pow ((timeFirstRxPacketNO[j][l] - (timeFirstRxPacketMR[j]/repeticao)), 2.0);
-				timeLastTxPacketDPsum += pow ((timeLastTxPacketNO[j][l] - (timeLastTxPacketMR[j]/repeticao)), 2.0);
-				timeLastRxPacketDPsum += pow ((timeLastRxPacketNO[j][l] - (timeLastRxPacketMR[j]/repeticao)), 2.0);
-				delaySumDPsum += pow ((delaySumNO[j][l] - (delaySumMR[j]/repeticao)), 2.0);
-				jitterSumDPsum += pow ((jitterSumNO[j][l] - (jitterSumMR[j]/repeticao)), 2.0);
-				lastDelayDPsum += pow ((lastDelayNO[j][l] - (lastDelayMR[j]/repeticao)), 2.0);
-				txBytesDPsum += pow ((txBytesNO[j][l] - (txBytesMR[j]/repeticao)), 2.0);
-				rxBytesDPsum += pow ((rxBytesNO[j][l] - (rxBytesMR[j]/repeticao)), 2.0);
-				txPacketsDPsum += pow ((txPacketsNO[j][l] - (txPacketsMR[j]/repeticao)), 2.0);
-				rxPacketsDPsum += pow ((rxPacketsNO[j][l] - (rxPacketsMR[j]/repeticao)), 2.0);
-				lostPacketsDPsum += pow ((lostPacketsNO[j][l] - (lostPacketsMR[j]/repeticao)), 2.0);
-			}*/
 
 			std::cout << "\n\n\n Flow: " << j+1;
 			std::cout << " \tSource: " << source[j]  << " \t Destination: " << destination[j] << "  \n";

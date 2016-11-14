@@ -43,8 +43,34 @@
 
 
 using namespace ns3;
+using namespace std;
 
 NS_LOG_COMPONENT_DEFINE ("RajadaWithoutMobilityProgram");
+
+
+void printEstatistica(string nomeVariavel, double soma, uint32_t repeticao, double dp) {
+	std::cout << " \tMédia Repetições " << nomeVariavel <<  ": " << soma/repeticao << " \t Desvio padrão: " << dp << "  \n";
+	//std::cout << " \tSoma " << nomeVariavel <<  ": " << soma  << " \t Média Repetições: " << soma/repeticao << " \t Desvio padrão: " << dp << "  \n";
+}
+
+double calcDesvioPadrao(uint32_t tamanho, double* valorDoNo, double media) {
+	double acumSum = 0.0;
+
+	for(uint32_t l = 0; l < tamanho; l++) {
+		acumSum +=  pow ((valorDoNo[l] - media), 2.0);
+	}
+	return sqrt (acumSum/(tamanho-1));
+}
+
+double calcDesvioPadrao(uint32_t tamanho, uint64_t* valorDoNo, double media) {
+	double acumSum = 0.0;
+
+	for(uint32_t l = 0; l < tamanho; l++) {
+		acumSum +=  pow ((valorDoNo[l] - media), 2.0);
+	}
+	return sqrt (acumSum/(tamanho-1));
+}
+
 
 int 
 main (int argc, char *argv[])

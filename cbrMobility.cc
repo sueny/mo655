@@ -42,14 +42,38 @@
 //                                    
 
 using namespace ns3;
+using namespace std;
 
 NS_LOG_COMPONENT_DEFINE ("CBRwithMobilityProgram");
 
-int 
-main (int argc, char *argv[])
-{
-	uint32_t qtddExec = 40/5;
-	uint32_t repeticao = 1;
+
+void printEstatistica(string nomeVariavel, double soma, uint32_t repeticao, double dp) {
+	std::cout << " \tMédia Repetições " << nomeVariavel <<  ": " << soma/repeticao << " \t Desvio padrão: " << dp << "  \n";
+	//std::cout << " \tSoma " << nomeVariavel <<  ": " << soma  << " \t Média Repetições: " << soma/repeticao << " \t Desvio padrão: " << dp << "  \n";
+}
+
+double calcDesvioPadrao(uint32_t tamanho, double* valorDoNo, double media) {
+	double acumSum = 0.0;
+
+	for(uint32_t l = 0; l < tamanho; l++) {
+		acumSum +=  pow ((valorDoNo[l] - media), 2.0);
+	}
+	return sqrt (acumSum/(tamanho-1));
+}
+
+double calcDesvioPadrao(uint32_t tamanho, uint64_t* valorDoNo, double media) {
+	double acumSum = 0.0;
+
+	for(uint32_t l = 0; l < tamanho; l++) {
+		acumSum +=  pow ((valorDoNo[l] - media), 2.0);
+	}
+	return sqrt (acumSum/(tamanho-1));
+}
+
+
+int main (int argc, char *argv[]) {
+	uint32_t qtddExec = 5/5;
+	uint32_t repeticao = 2;
 
 	uint64_t maxPackets = 1000000;
 	double timeInterval = 0.003824;
@@ -75,13 +99,14 @@ main (int argc, char *argv[])
 		Ipv4Address source[nWifi];
 		Ipv4Address destination[nWifi];
 
-		Time timeFirstTxPacketMR[nWifi];
-		Time timeFirstRxPacketMR[nWifi];
-		Time timeLastTxPacketMR[nWifi];
-		Time timeLastRxPacketMR[nWifi];
-		Time delaySumMR[nWifi];
-		Time jitterSumMR[nWifi];
-		Time lastDelayMR[nWifi];
+		/*Variáveis que acumulam a soma para depois calcular a média*/
+		double timeFirstTxPacketMR[nWifi];
+		double timeFirstRxPacketMR[nWifi];
+		double timeLastTxPacketMR[nWifi];
+		double timeLastRxPacketMR[nWifi];
+		double delaySumMR[nWifi];
+		double jitterSumMR[nWifi];
+		double lastDelayMR[nWifi];
 
 		uint64_t txBytesMR[nWifi];
 		uint64_t rxBytesMR[nWifi];
@@ -90,12 +115,35 @@ main (int argc, char *argv[])
 		uint64_t lostPacketsMR[nWifi];
 
 		for(uint32_t j = 0; j < nWifi; j++) {
+			timeFirstTxPacketMR[j] = 0.0;
+			timeFirstRxPacketMR[j] = 0.0;
+			timeLastTxPacketMR[j] = 0.0;
+			timeLastRxPacketMR[j] = 0.0;
+			delaySumMR[j] = 0.0;
+			jitterSumMR[j] = 0.0;
+			lastDelayMR[j] = 0.0;
 			txBytesMR[j] = 0;
 			rxBytesMR[j] = 0;
 			txPacketsMR[j] = 0;
 			rxPacketsMR[j] = 0;
 			lostPacketsMR[j] = 0;
 		}
+
+
+		/*Variáveis para armazenar o valor de cada NÓ para depois calcular o desvio padrão*/
+		double timeFirstTxPacketNO[nWifi][repeticao];
+		double timeFirstRxPacketNO[nWifi][repeticao];
+		double timeLastTxPacketNO[nWifi][repeticao];
+		double timeLastRxPacketNO[nWifi][repeticao];
+		double delaySumNO[nWifi][repeticao];
+		double jitterSumNO[nWifi][repeticao];
+		double lastDelayNO[nWifi][repeticao];
+
+		uint64_t txBytesNO[nWifi][repeticao];
+		uint64_t rxBytesNO[nWifi][repeticao];
+		uint64_t txPacketsNO[nWifi][repeticao];
+		uint64_t rxPacketsNO[nWifi][repeticao];
+		uint64_t lostPacketsNO[nWifi][repeticao];
 
 		for (uint32_t k = 1; k <= repeticao; k++) {
 			cmd.AddValue ("nWifi", "Number of wifi STA devices", nWifi);
@@ -157,30 +205,30 @@ main (int argc, char *argv[])
 			MobilityHelper mobility;
 
 			mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-									mobility.Install (serverNode);
+			mobility.Install (serverNode);
 
 			mobility.SetPositionAllocator ("ns3::GridPositionAllocator",
-									"MinX", DoubleValue (20.0),
-									"MinY", DoubleValue (0.0),
-									"DeltaX", DoubleValue (1.0),
-									"DeltaY", DoubleValue (1.0),
-									"GridWidth", UintegerValue (1),
-									"LayoutType", StringValue ("RowFirst"));
+					"MinX", DoubleValue (20.0),
+					"MinY", DoubleValue (0.0),
+					"DeltaX", DoubleValue (1.0),
+					"DeltaY", DoubleValue (1.0),
+					"GridWidth", UintegerValue (1),
+					"LayoutType", StringValue ("RowFirst"));
 			mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 			mobility.Install (wifiApNode);
 
 
 			mobility.SetPositionAllocator ("ns3::GridPositionAllocator",
-								"MinX", DoubleValue (10.0),
-								"MinY", DoubleValue (2.0),
-								"DeltaX", DoubleValue (5.0),
-								"DeltaY", DoubleValue (2.0),
-								"GridWidth", UintegerValue (5),
-								"LayoutType", StringValue ("RowFirst"));
+					"MinX", DoubleValue (10.0),
+					"MinY", DoubleValue (2.0),
+					"DeltaX", DoubleValue (5.0),
+					"DeltaY", DoubleValue (2.0),
+					"GridWidth", UintegerValue (5),
+					"LayoutType", StringValue ("RowFirst"));
 
 			mobility.SetMobilityModel ("ns3::RandomWalk2dMobilityModel",
-						"Bounds", RectangleValue (Rectangle (0, 40, 0, 40))
-						);
+					"Bounds", RectangleValue (Rectangle (0, 40, 0, 40))
+			);
 			mobility.Install (wifiStaNodes);
 
 			InternetStackHelper stack;
@@ -250,32 +298,38 @@ main (int argc, char *argv[])
 				Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
 
 				if(k==1){
-
 					source[i->first-1] = t.sourceAddress;
 					destination[i->first-1] = t.destinationAddress;
-
-					timeFirstTxPacketMR[i->first-1]  = i->second.timeFirstTxPacket;
-					timeFirstRxPacketMR[i->first-1]  = i->second.timeFirstRxPacket;
-					timeLastTxPacketMR[i->first-1]  = i->second.timeLastTxPacket;
-					timeLastRxPacketMR[i->first-1]  = i->second.timeLastRxPacket;
-					delaySumMR[i->first-1]  = i->second.delaySum;
-					jitterSumMR[i->first-1]  = i->second.jitterSum;
-					lastDelayMR[i->first-1]  = i->second.lastDelay;
-				} else {
-					timeFirstTxPacketMR[i->first-1] += i->second.timeFirstTxPacket;
-					timeFirstRxPacketMR[i->first-1] += i->second.timeFirstRxPacket;
-					timeLastTxPacketMR[i->first-1] += i->second.timeLastTxPacket;
-					timeLastRxPacketMR[i->first-1] += i->second.timeLastRxPacket;
-					delaySumMR[i->first-1] += i->second.delaySum;
-					jitterSumMR[i->first-1] += i->second.jitterSum;
-					lastDelayMR[i->first-1] += i->second.lastDelay;
 				}
 
+
+				/*Soma os valores de cada repetição de cada nó para depois calcular a média*/
+				timeFirstTxPacketMR[i->first-1] += i->second.timeFirstTxPacket.GetSeconds();
+				timeFirstRxPacketMR[i->first-1] += i->second.timeFirstRxPacket.GetSeconds();
+				timeLastTxPacketMR[i->first-1] += i->second.timeLastTxPacket.GetSeconds();
+				timeLastRxPacketMR[i->first-1] += i->second.timeLastRxPacket.GetSeconds();
+				delaySumMR[i->first-1] += i->second.delaySum.GetSeconds();
+				jitterSumMR[i->first-1] += i->second.jitterSum.GetSeconds();
+				lastDelayMR[i->first-1] += i->second.lastDelay.GetSeconds();
 				txBytesMR[i->first-1] += i->second.txBytes;
 				rxBytesMR[i->first-1] += i->second.rxBytes;
 				txPacketsMR[i->first-1] += i->second.txPackets;
 				rxPacketsMR[i->first-1] += i->second.rxPackets;
 				lostPacketsMR[i->first-1] += i->second.lostPackets;
+
+				/*Guarda o valor de cada nó para depois calcular o desvio padrão*/
+				timeFirstTxPacketNO[i->first-1][k-1] = i->second.timeFirstTxPacket.GetSeconds();
+				timeFirstRxPacketNO[i->first-1][k-1] = i->second.timeFirstRxPacket.GetSeconds();
+				timeLastTxPacketNO[i->first-1][k-1] = i->second.timeLastTxPacket.GetSeconds();
+				timeLastRxPacketNO[i->first-1][k-1] = i->second.timeLastRxPacket.GetSeconds();
+				delaySumNO[i->first-1][k-1] = i->second.delaySum.GetSeconds();
+				jitterSumNO[i->first-1][k-1] = i->second.jitterSum.GetSeconds();
+				lastDelayNO[i->first-1][k-1] = i->second.lastDelay.GetSeconds();
+				txBytesNO[i->first-1][k-1] = i->second.txBytes;
+				rxBytesNO[i->first-1][k-1] = i->second.rxBytes;
+				txPacketsNO[i->first-1][k-1] = i->second.txPackets;
+				rxPacketsNO[i->first-1][k-1] = i->second.rxPackets;
+				lostPacketsNO[i->first-1][k-1] = i->second.lostPackets;
 			}
 
 
@@ -290,28 +344,101 @@ main (int argc, char *argv[])
 
 			std::cout << "\n\n\n Flow: " << j+1;
 			std::cout << " \tSource: " << source[j]  << " \t Destination: " << destination[j] << "  \n";
-			std::cout << " \tSoma timeFirstTxPacket: " << timeFirstTxPacketMR[j]  << " \t Média Repetições: " << timeFirstTxPacketMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma timeFirstRxPacket: " << timeFirstRxPacketMR[j]  << " \t Média Repetições: " << timeFirstRxPacketMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma timeLastTxPacket: " << timeLastTxPacketMR[j]  << " \t Média Repetições: " << timeLastTxPacketMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma timeLastRxPacket: " << timeLastRxPacketMR[j]  << " \t Média Repetições: " << timeLastRxPacketMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma delaySum: " << delaySumMR[j]  << " \t Média Repetições: " << delaySumMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma jitterSum: " << jitterSumMR[j]  << " \t Média Repetições: " << jitterSumMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma lastDelay: " << lastDelayMR[j]  << " \t Média Repetições: " << lastDelayMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma txBytes: " << txBytesMR[j]  << " \t Média Repetições: " << txBytesMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma rxBytes: " << rxBytesMR[j]  << " \t Média Repetições: " << rxBytesMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma txPackets: " << txPacketsMR[j]  << " \t Média Repetições: " << txPacketsMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma rxPackets: " << rxPacketsMR[j]  << " \t Média Repetições: " << rxPacketsMR[j]/repeticao << "  \n";
-			std::cout << " \tSoma lostPackets: " << lostPacketsMR[j]  << " \t Média Repetições: " << lostPacketsMR[j]/repeticao << "  \n";
+
+			double dp = 0.0;
+
+			dp = calcDesvioPadrao(repeticao, timeFirstTxPacketNO[j], timeFirstTxPacketMR[j]/repeticao);
+			printEstatistica("timeFirstTxPacket", timeFirstTxPacketMR[j], repeticao, dp);
+
+			dp = calcDesvioPadrao(repeticao, timeFirstRxPacketNO[j], timeFirstRxPacketMR[j]/repeticao);
+			printEstatistica("timeFirstRxPacket", timeFirstRxPacketMR[j], repeticao, dp);
+
+			dp = calcDesvioPadrao(repeticao, timeLastTxPacketNO[j], timeLastTxPacketMR[j]/repeticao);
+			printEstatistica("timeLastTxPacket", timeLastTxPacketMR[j], repeticao, dp);
+
+			dp = calcDesvioPadrao(repeticao, timeLastRxPacketNO[j], timeLastRxPacketMR[j]/repeticao);
+			printEstatistica("timeLastRxPacket", timeLastRxPacketMR[j], repeticao, dp);
+
+			dp = calcDesvioPadrao(repeticao, delaySumNO[j], delaySumMR[j]/repeticao);
+			printEstatistica("delaySum", delaySumMR[j], repeticao, dp);
+
+			dp = calcDesvioPadrao(repeticao, jitterSumNO[j], jitterSumMR[j]/repeticao);
+			printEstatistica("jitterSum", jitterSumMR[j], repeticao, dp);
+
+			dp = calcDesvioPadrao(repeticao, lastDelayNO[j], lastDelayMR[j]/repeticao);
+			printEstatistica("lastDelay", lastDelayMR[j], repeticao, dp);
+
+			dp = calcDesvioPadrao(repeticao, txBytesNO[j], txBytesMR[j]/repeticao);
+			printEstatistica("txBytes", txBytesMR[j], repeticao, dp);
+
+			dp = calcDesvioPadrao(repeticao, rxBytesNO[j], rxBytesMR[j]/repeticao);
+			printEstatistica("rxBytes", rxBytesMR[j], repeticao, dp);
+
+			dp = calcDesvioPadrao(repeticao, txPacketsNO[j], txPacketsMR[j]/repeticao);
+			printEstatistica("txPackets", txPacketsMR[j], repeticao, dp);
+
+			dp = calcDesvioPadrao(repeticao, rxPacketsNO[j], rxPacketsMR[j]/repeticao);
+			printEstatistica("rxPackets", rxPacketsMR[j], repeticao, dp);
+
+			dp = calcDesvioPadrao(repeticao, lostPacketsNO[j], lostPacketsMR[j]/repeticao);
+			printEstatistica("lostPackets", lostPacketsMR[j], repeticao, dp);
+
+			std::cout << "\n";
+			std::cout << " \tCálculos importantes:";
 			std::cout << "\n";
 
-			std::cout << " \tCálculos importantes:";
-			std::cout << " \tMean delay:  " << (delaySumMR[j]/repeticao)/(rxPacketsMR[j]/repeticao) << "  \n";
-			std::cout << " \tMean jitter:  " << (jitterSumMR[j]/repeticao)/((rxPacketsMR[j]/repeticao)-1) << "  \n";
-			std::cout << " \tMean transmitted packet size (byte):  " << (txBytesMR[j]/repeticao)/(txPacketsMR[j]/repeticao) << "  \n";
-			std::cout << " \tMean received packet size (byte):  " << (rxBytesMR[j]/repeticao)/(rxPacketsMR[j]/repeticao) << "  \n";
-			std::cout << " \tMean transmitted bitrate (bit/s):  " << (8 * txBytesMR[j]/repeticao)/((timeLastTxPacketMR[j]/repeticao)-(timeFirstTxPacketMR[j]/repeticao)) << "  \n";
-			std::cout << " \tMean received bitrate (bit/s):  " << (8 * rxBytesMR[j]/repeticao)/((timeLastRxPacketMR[j]/repeticao)-(timeFirstRxPacketMR[j]/repeticao)) << "  \n";
-			std::cout << " \tMean packet loss ratio:  " << (lostPacketsMR[j]/repeticao)/((rxPacketsMR[j]/repeticao)+(lostPacketsMR[j]/repeticao)) << "  \n";
+
+			double aux[repeticao];
+			double media;
+
+			for(uint32_t l = 0; l < repeticao; l++) {
+				aux[l] = delaySumNO[j][l]/rxPacketsNO[j][l];
+			}
+			media = (delaySumMR[j]/repeticao)/(rxPacketsMR[j]/repeticao);
+			dp = calcDesvioPadrao(repeticao, aux, media);
+			std::cout << " \tMean delay:  " << media << " \tDesvioPadrão: " << dp <<  " \n";
+
+			for(uint32_t l = 0; l < repeticao; l++) {
+				aux[l] = (jitterSumNO[j][l])/(rxPacketsNO[j][l]-1);
+			}
+			media = (jitterSumMR[j]/repeticao)/((rxPacketsMR[j]/repeticao)-1);
+			dp = calcDesvioPadrao(repeticao, aux, media);
+			std::cout << " \tMean jitter:  " << media << " \tDesvioPadrão: " << dp <<  " \n";
+
+			for(uint32_t l = 0; l < repeticao; l++) {
+				aux[l] = txBytesNO[j][l]/txPacketsNO[j][l];
+			}
+			media = (txBytesMR[j]/repeticao)/(txPacketsMR[j]/repeticao);
+			dp = calcDesvioPadrao(repeticao, aux, media);
+			std::cout << " \tMean transmitted packet size (byte):  " << media << " \tDesvioPadrão: " << dp <<  " \n";
+
+			for(uint32_t l = 0; l < repeticao; l++) {
+				aux[l] = rxBytesNO[j][l]/rxPacketsNO[j][l];
+			}
+			media = (rxBytesMR[j]/repeticao)/(rxPacketsMR[j]/repeticao);
+			dp = calcDesvioPadrao(repeticao, aux, media);
+			std::cout << " \tMean received packet size (byte):  " << media << " \tDesvioPadrão: " << dp <<  " \n";
+
+			for(uint32_t l = 0; l < repeticao; l++) {
+				aux[l] = ((8 * txBytesNO[j][l])/(timeLastTxPacketNO[j][l]-timeFirstTxPacketNO[j][l]));
+			}
+			media = ((8 * txBytesMR[j]/repeticao)/((timeLastTxPacketMR[j]/repeticao)-(timeFirstTxPacketMR[j]/repeticao)));
+			dp = calcDesvioPadrao(repeticao, aux, media);
+			std::cout << " \tMean transmitted bitrate (bit/s):  " << media << " \tDesvioPadrão: " << dp <<  " \n";
+
+			for(uint32_t l = 0; l < repeticao; l++) {
+				aux[l] = ((8 * rxBytesNO[j][l])/(timeLastRxPacketNO[j][l]-timeFirstRxPacketNO[j][l]));
+			}
+			media = ((8 * rxBytesMR[j]/repeticao)/((timeLastRxPacketMR[j]/repeticao)-(timeFirstRxPacketMR[j]/repeticao)));
+			dp = calcDesvioPadrao(repeticao, aux, media);
+			std::cout << " \tMean received bitrate (bit/s):  " << media << " \tDesvioPadrão: " << dp <<  " \n";
+
+			for(uint32_t l = 0; l < repeticao; l++) {
+				aux[l] = lostPacketsNO[j][l]/(rxPacketsNO[j][l]+lostPacketsNO[j][l]);
+			}
+			media = (lostPacketsMR[j]/repeticao)/((rxPacketsMR[j]/repeticao)+(lostPacketsMR[j]/repeticao));
+			dp = calcDesvioPadrao(repeticao, aux, media);
+			std::cout << " \tMean packet loss ratio:  " << media << " \tDesvioPadrão: " << dp <<  " \n";
 
 		}
 	}
