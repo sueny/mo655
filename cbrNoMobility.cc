@@ -41,6 +41,8 @@
 //
 // Obs:
 // Resultados exibidos em escala de segundos
+// executar comando : ./waf --run nomeDoArquivo > result.txt
+
 
 
 using namespace ns3;

@@ -38,8 +38,11 @@
 //  |    |    |    |    10.1.1.0
 // n2   n3   n4   n0 -------------- n1  Server 10.1.1.2
 //                   point-to-point  
-//                                   
-//                                    
+//
+// Obs:
+// Resultados exibidos em escala de segundos
+// executar comando : ./waf --run nomeDoArquivo > result.txt
+
 
 using namespace ns3;
 using namespace std;
