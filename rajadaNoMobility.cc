@@ -82,7 +82,7 @@ main (int argc, char *argv[])
 
 	bool verbose = true;
 	uint32_t nServer = 0;
-	float tempoExecucao = 100.0;
+	float tempoExecucao = 60.0;
 
 	bool tracing = false;
 
@@ -162,11 +162,11 @@ main (int argc, char *argv[])
 				return 1;
 			}
 
-			/*if (verbose)
+			if (verbose)
 			{
 				LogComponentEnable ("OnOffApplication", LOG_LEVEL_INFO);
 				LogComponentEnable ("PacketSink", LOG_LEVEL_INFO);
-			}*/
+			}
 
 			NodeContainer p2pNodes;
 			p2pNodes.Create (2);
@@ -358,6 +358,14 @@ main (int argc, char *argv[])
 		std::cout << "Número de nós do wifi: " << nWifi << " \n";
 		std::cout << "Quantidade de repetições: " << repeticao << " \n";
 
+		double delaySum = 0.0;
+		double jitterSum = 0.0;
+		double tpsSum = 0.0;
+		double rpsSum = 0.0;
+		double tbSum = 0.0;
+		double rbSum = 0.0;
+		double plrSum = 0.0;
+
 		for(uint32_t j = 0; j < nWifi*2; j++) {
 
 			std::cout << "\n\n\n Flow: " << j+1;
@@ -413,6 +421,7 @@ main (int argc, char *argv[])
 				aux[l] = delaySumNO[j][l]/rxPacketsNO[j][l];
 			}
 			media = (delaySumMR[j]/repeticao)/(rxPacketsMR[j]/repeticao);
+			delaySum += media;
 			dp = calcDesvioPadrao(repeticao, aux, media);
 			std::cout << " \tMean delay:  " << media << " \tDesvioPadrão: " << dp <<  " \n";
 
@@ -420,6 +429,7 @@ main (int argc, char *argv[])
 				aux[l] = (jitterSumNO[j][l])/(rxPacketsNO[j][l]-1);
 			}
 			media = (jitterSumMR[j]/repeticao)/((rxPacketsMR[j]/repeticao)-1);
+			jitterSum += media;
 			dp = calcDesvioPadrao(repeticao, aux, media);
 			std::cout << " \tMean jitter:  " << media << " \tDesvioPadrão: " << dp <<  " \n";
 
@@ -427,6 +437,7 @@ main (int argc, char *argv[])
 				aux[l] = txBytesNO[j][l]/txPacketsNO[j][l];
 			}
 			media = (txBytesMR[j]/repeticao)/(txPacketsMR[j]/repeticao);
+			tpsSum += media;
 			dp = calcDesvioPadrao(repeticao, aux, media);
 			std::cout << " \tMean transmitted packet size (byte):  " << media << " \tDesvioPadrão: " << dp <<  " \n";
 
@@ -434,6 +445,7 @@ main (int argc, char *argv[])
 				aux[l] = rxBytesNO[j][l]/rxPacketsNO[j][l];
 			}
 			media = (rxBytesMR[j]/repeticao)/(rxPacketsMR[j]/repeticao);
+			rpsSum += media;
 			dp = calcDesvioPadrao(repeticao, aux, media);
 			std::cout << " \tMean received packet size (byte):  " << media << " \tDesvioPadrão: " << dp <<  " \n";
 
@@ -441,6 +453,7 @@ main (int argc, char *argv[])
 				aux[l] = ((8 * txBytesNO[j][l])/(timeLastTxPacketNO[j][l]-timeFirstTxPacketNO[j][l]));
 			}
 			media = ((8 * txBytesMR[j]/repeticao)/((timeLastTxPacketMR[j]/repeticao)-(timeFirstTxPacketMR[j]/repeticao)));
+			tbSum += media;
 			dp = calcDesvioPadrao(repeticao, aux, media);
 			std::cout << " \tMean transmitted bitrate (bit/s):  " << media << " \tDesvioPadrão: " << dp <<  " \n";
 
@@ -448,6 +461,7 @@ main (int argc, char *argv[])
 				aux[l] = ((8 * rxBytesNO[j][l])/(timeLastRxPacketNO[j][l]-timeFirstRxPacketNO[j][l]));
 			}
 			media = ((8 * rxBytesMR[j]/repeticao)/((timeLastRxPacketMR[j]/repeticao)-(timeFirstRxPacketMR[j]/repeticao)));
+			rbSum += media;
 			dp = calcDesvioPadrao(repeticao, aux, media);
 			std::cout << " \tMean received bitrate (bit/s):  " << media << " \tDesvioPadrão: " << dp <<  " \n";
 
@@ -455,10 +469,21 @@ main (int argc, char *argv[])
 				aux[l] = lostPacketsNO[j][l]/(rxPacketsNO[j][l]+lostPacketsNO[j][l]);
 			}
 			media = (lostPacketsMR[j]/repeticao)/((rxPacketsMR[j]/repeticao)+(lostPacketsMR[j]/repeticao));
+			plrSum += media;
 			dp = calcDesvioPadrao(repeticao, aux, media);
 			std::cout << " \tMean packet loss ratio:  " << media << " \tDesvioPadrão: " << dp <<  " \n";
 
 		}
+
+		std::cout << "\n\nMédia dos nós dos cálculos importantes\n";
+		std::cout << " \tMean NÓS delay:  " << delaySum/(nWifi*2) << " \n";
+		std::cout << " \tMean NÓS jitter:  " << jitterSum/(nWifi*2) << " \n";
+		std::cout << " \tMean NÓS transmitted packet size (byte):  " << tpsSum/(nWifi*2) << " \n";
+		std::cout << " \tMean NÓS received packet size (byte):  " << rpsSum/(nWifi*2) << " \n";
+		std::cout << " \tMean NÓS transmitted bitrate (bit/s):  "  << tbSum/(nWifi*2) << " \n";
+		std::cout << " \tMean NÓS received bitrate (bit/s):  "  << rbSum/(nWifi*2) << " \n";
+		std::cout << " \tMean NÓS packet loss ratio:  "  << plrSum/(nWifi*2) << " \n";
+		std::cout << "\n\n\n";
 	}
 
 	return 0;
