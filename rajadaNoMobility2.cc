@@ -89,17 +89,18 @@ double calcDesvioPadrao(uint32_t tamanho, uint64_t* valorDoNo, double media) {
 int 
 main (int argc, char *argv[])
 {
-	uint32_t qtddExec = 10/5;
-	uint32_t repeticao = 2;
+	uint32_t start = 35;
+	uint32_t qtddExec = 40/5;
+	uint32_t repeticao = 10;
 
 	bool verbose = false;
 	uint32_t nServer = 0;
-	float tempoExecucao = 10.0;
+	float tempoExecucao = 60.0;
 
 	bool tracing = false;
 
 
-	for (uint32_t z = 1; z <= qtddExec; z++) {
+	for (uint32_t z = start/5; z <= qtddExec; z++) {
 
 		uint32_t nWifi = z * 5;
 
@@ -269,7 +270,7 @@ main (int argc, char *argv[])
 
 			OnOffHelper onOffHelper ("ns3::TcpSocketFactory", p2pInterfaces.GetAddress (1));
 			onOffHelper.SetAttribute ("OnTime", StringValue
-					("ns3::NormalRandomVariable[Mean=100.0|Variance=1.0|Bound=1.0]"));
+					("ns3::NormalRandomVariable[Mean=60.0|Variance=1.0|Bound=1.0]"));
 			onOffHelper.SetAttribute ("OffTime", StringValue
 					("ns3::NormalRandomVariable[Mean=1.0|Variance=1.0|Bound=1.0]"));
 			onOffHelper.SetAttribute ("DataRate",StringValue ("1Mbps"));
