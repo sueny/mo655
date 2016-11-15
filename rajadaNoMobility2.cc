@@ -565,10 +565,11 @@ main (int argc, char *argv[])
 		}
 
 		std::cout << "\n";
-
 		//std::cout << "\n\nMédia dos nós dos cálculos importantes\n";
 		std::cout << "Média NÓS\n";
 
+		std::cout << "Meandelay;";
+		std::cout << "dp;";
 		std::cout << "Meanjitter;";
 		std::cout << "dp;";
 		std::cout << "MeanTransmittedPacketSize (byte);";

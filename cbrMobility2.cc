@@ -87,8 +87,8 @@ double calcDesvioPadrao(uint32_t tamanho, uint64_t* valorDoNo, double media) {
 
 
 int main (int argc, char *argv[]) {
-	uint32_t qtddExec = 10/5;
-	uint32_t repeticao = 2;
+	uint32_t qtddExec = 40/5;
+	uint32_t repeticao = 10;
 
 	uint64_t maxPackets = 1000000;
 	double timeInterval = 0.003824;
@@ -96,7 +96,7 @@ int main (int argc, char *argv[]) {
 
 	bool verbose = false;
 	uint32_t nServer = 0;
-	float tempoExecucao = 10.0;
+	float tempoExecucao = 60.0;
 
 	bool tracing = false;
 
@@ -550,6 +550,8 @@ int main (int argc, char *argv[]) {
 		//std::cout << "\n\nMédia dos nós dos cálculos importantes\n";
 		std::cout << "Média NÓS\n";
 
+		std::cout << "Meandelay;";
+		std::cout << "dp;";
 		std::cout << "Meanjitter;";
 		std::cout << "dp;";
 		std::cout << "MeanTransmittedPacketSize (byte);";
