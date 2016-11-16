@@ -373,7 +373,7 @@ int main (int argc, char *argv[]) {
 
 
 				std::cout << (1.0) * i->second.delaySum.GetSeconds()/i->second.rxPackets << ";";
-				std::cout << (1.0) * (i->second.jitterSum.GetSeconds())/(i->second.rxPackets) << ";";
+				std::cout << (1.0) * (i->second.jitterSum.GetSeconds())/(i->second.rxPackets-(1.0)) << ";";
 				std::cout << (1.0) * i->second.txBytes/i->second.txPackets << ";";
 				std::cout << (1.0) * i->second.rxBytes/i->second.rxPackets << ";";
 				std::cout << ((8.0 * i->second.txBytes)/(i->second.timeLastTxPacket.GetSeconds()-i->second.timeFirstTxPacket.GetSeconds())) << ";";
